@@ -53,9 +53,8 @@ def pm_optimized(log, lambd, step):
     "Argument 'STEP' should be integer or float number or list of grid points"
     
     def Q(log, transits, N, M, theta1, theta2, lambd):
-        _, _, edges = process_map(log, theta1, theta2)
+        _, nodes, edges = process_map(log, theta1, theta2)
         edges = [e for e in edges if (e[0] != 'start') | (e[1] != 'end')]
-        nodes = {v for e in edges for v in e}
         n, m = len(nodes), len(edges)
         losses = len([e for e in transits if e not in edges])
         
