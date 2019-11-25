@@ -99,7 +99,7 @@ class ProcessMap(object):
         x_max, x_min = max(F.values()), min(F.values())
         for a in nodes:
             node_label = a + ' (' + str(F[a]) + ')'
-            color = int((F[a] - x_min) / (x_max - x_min + 1e-6) * 100.)
+            color = int((x_max - F[a]) / (x_max - x_min + 1e-6) * 100.)
             fill, font = "#ffffff", 'black'
             if colored:
                 for interval in color_map:
@@ -107,7 +107,7 @@ class ProcessMap(object):
                         fill = color_map[interval]
                         break
             else: fill = 'gray' + str(color)
-            if color >= 50:
+            if color < 50:
                 font = 'white'
             G.node(a, label=node_label, fillcolor=fill, fontcolor=font)
         G.node("start", shape="circle", label=str(case_cnt), \

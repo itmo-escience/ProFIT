@@ -1,8 +1,8 @@
-color_map = {range(0,10) : "#ffffff", range(10,20) : "#e0ddf4",
-             range(20,30) : "#c0bde9", range(30,40) : "#a09dde",
-             range(40,50) : "#7d7fd2", range(50,60) : "#5661c6",
-             range(60,70) : "#1946ba", range(70,80) : "#1f3b98",
-             range(80,90) : "#203078", range(90,101) : "#1d2559"}
+color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
+             range(20,30) : "#1f3b98", range(30,40) : "#1946ba",
+             range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
+             range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
+             range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
 
 def incidence_matrix(edges, excpt=[]):
     I = dict()
