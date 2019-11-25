@@ -60,10 +60,10 @@ def pm_optimized(log, lambd, step):
         
         return losses/len(transits) + .5 * lambd * (m/M + n/N)
     
-    T = log.transit_matrix()
+    fl = log.flat_log
     activities = log.activities
-    transits = [(a_i, a_j) for a_i in T for a_j in T[a_i]]
-    N, M = len(activities), len(transits)
+    transits = [t for case_id in fl for t in zip(fl[case_id][:-1],fl[case_id][1:])]
+    N, M = len(activities), len(set(transits))
     
     Q_val = dict()
     if type(step) in [int, float]:
@@ -80,7 +80,7 @@ def pm_optimized(log, lambd, step):
         if a != 100: Q_val[(100,100)] = Q(log, transits, N, M, 100, 100, lambd)
     else:
         per_done = 0
-        per_step = 100 /len(step)
+        per_step = 100 / len(step)
         for a in step:
             for p in step:
                 Q_val[(a,p)] = Q(log, transits, N, M, a, p, lambd)
