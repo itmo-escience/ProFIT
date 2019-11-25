@@ -28,7 +28,9 @@ def dict_normalization(dict_, nested=False):
             dict_norm = {key: (dict_[key] - d_min) / (d_max - d_min) for key in dict_}
     else:
         for key_1 in dict_:
-            dict_norm[key_1] = dict()
+            if dict_[key_1]:
+                dict_norm[key_1] = dict()
+            else: continue
             d_max = max(dict_[key_1].values())
             d_min = min(dict_[key_1].values())
             for key_2 in dict_[key_1]:
