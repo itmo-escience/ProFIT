@@ -2,8 +2,57 @@ import graphviz as gv
 from util_pm import *
 
 class ProcessMap(object):
+    """ Perform process model from event log.
     
+    Attributes
+    ----------
+    T: dict
+        Transition matrix
+    nodes: list
+        Set of activities in the model
+    edges: list
+        Set of transitions in the model
+    rates: dict
+        Activity and path rates of the model
+    
+    See Also
+    ---------
+    process_map
+    pm_optimized
+    
+    Examples
+    --------
+    >>> log = Log("../PATH/LOG-FILE.csv")
+    >>> pm = ProcessMap(log, 100, 5)
+    >>> pm_opt = ProcessMap(log, optimized=True)
+    """
     def __init__(self, log, activity_rate=100, path_rate=100, optimized=False, lambd=1, step=10):
+        """ Class Constructor. 
+        
+        Provides optimized process model if optimized=True, else
+        performs model simplification based on specified rates.
+        
+        Parameters
+        ----------
+        log: Log
+            Ordered records of events
+        activity_rate: float
+            The inverse value to node significance threshold: the
+            more it is, the more activities are observed in the model
+            (default 100)
+        path_rate: float
+            The inverse value to edge significance threshold: the
+            more it is, the more transitions are observed in the model
+            (default 100)
+        optimized: bool
+            Find optimal rates for process model (default False)
+        lambd: float
+            Regularization coefficient of completeness and comprehension
+            of process model (default 1)
+        step: int / float / list
+            The step value or list of grid points for the search space
+            (default 10)
+        """
         if optimized:
             self.T, self.nodes, self.edges, self.rates = pm_optimized(log, lambd, step)
         else:
@@ -11,7 +60,13 @@ class ProcessMap(object):
             self.rates = {'activities': activity_rate, 'paths': path_rate}
 
     def cycles_search(self):
+        """
+        Perform DFS for cycles search in graph (process model).
         
+        Returns
+        =======
+        List: of cycles found in the graph
+        """
         G = incidence_matrix(self.edges)
         cycles = []
         stack = []
@@ -43,6 +98,24 @@ class ProcessMap(object):
         return cycles
     
     def cycles_replay(self, log):
+        """
+        Replay log and count occurrence of cycles found
+        in the process model.
+        
+        Parameters
+        ----------
+        log: Log
+            Ordered records of events to replay
+        
+        Returns
+        =======
+        Dict: with cycle as key and its occurrence frequency
+              in the log as value
+        
+        See Also
+        --------
+        cycles_search
+        """
         cycles = self.cycles_search()
         cycles_nodes = {c for cyc in cycles for c in cyc}
         cycle_count = {tuple(c) : 0 for c in cycles}
@@ -87,6 +160,22 @@ class ProcessMap(object):
         return cycle_count
 
     def render(self, save_path='', colored=True):
+        """
+        Visualize process model as a graph.
+        
+        Parameters
+        ----------
+        save_path: str
+            Path to directory where to save result as PNG/GV file.
+            If empty string (default) is passed result won't be saved
+        colored: bool
+            Use color map (default True) for visualization. If False
+            use black and white representation
+        
+        Returns
+        =======
+        Digraph: description in the DOT language (graphviz module)
+        """
         T, nodes, edges, rates = self.T, self.nodes, self.edges, self.rates
         G = gv.Digraph(strict=False, format='png')
         G.attr(rankdir='TD')

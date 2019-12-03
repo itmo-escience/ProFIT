@@ -5,6 +5,19 @@ color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
              range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
 
 def incidence_matrix(edges, excpt=[]):
+    """ Perform an incidence matrix
+
+    Returns the matrix as dict where 1 indicates a
+    relationship between two nodes in a directed graph.
+    
+    Parameters
+    ----------
+    edges: list
+        Set of graph's edges
+    excpt: list
+        Set of nodes to exclude from matrix construction
+        (default [])
+    """
     I = dict()
     for e in edges:
         a_i = e[0]
@@ -18,6 +31,19 @@ def incidence_matrix(edges, excpt=[]):
     return I
 
 def dict_normalization(dict_, nested=False):
+    """ Perform dictionary normalization as matrix's
+    rows normalization
+    
+    Returns normalized along rows matrix as a dictionary.
+    
+    Parameters
+    ----------
+    dict_: dict
+        Dictionary (array or matrix) to normalize
+    nested: bool
+        Indicate object dimension: if True the 2-dimensional
+        object is passed, else 1-dimensional (default False)
+    """
     dict_norm = dict()
     if not nested:
         d_max = max(dict_.values())
@@ -40,7 +66,8 @@ def dict_normalization(dict_, nested=False):
                     dict_norm[key_1][key_2] = (dict_[key_1][key_2] - d_min) / (d_max - d_min)
     return dict_norm
 
-def node_significance(log):        
+def node_significance(log):
+    # Node case significance
     # Activities case frequencies
     caseF = dict()
     for a in log.activities:
@@ -69,6 +96,7 @@ def transit_matrix(log):
     return T
 
 def edge_sig(T, source=[], target=[], type_='out'):
+    # Edge case significance
     case_cnt = sum([v[0] for v in T['start'].values()])
     S = dict()
     for a_i in source:
@@ -82,6 +110,7 @@ def edge_sig(T, source=[], target=[], type_='out'):
     return S
 
 def rel_sig(S_out, S_in):
+    # Relative significance of conflicting relations
     rS = dict()
     for A in S_out:
         rS[A] = dict()
@@ -94,6 +123,7 @@ def rel_sig(S_out, S_in):
     return rS
 
 def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
+    # Determine the most significant behavior in the process
     ttp = [] # transitions in conflict to preserve
     for A in rS:
         for B in rS[A]:
@@ -108,6 +138,23 @@ def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
     return set(ttp)
 
 def edge_filtering(S, edge_list, co=0, type_='out'):
+    """ Process model simplification
+
+    Returns filtrated set of edges.
+
+    Parameters
+    ----------
+    S: dict
+        Edge significance matrix
+    edge_list: list
+        Set of edges to filtrate
+    co: float
+        Cut-off threshold for edge filtration
+        (default 0)
+    type_: str
+        Determine type of edges (in- or outcoming)
+        to filtrate (default 'out')
+    """
     edges = edge_list[:]
     for a in S:
         S_sort = sorted(S[a], key=S[a].get, reverse=True)
@@ -122,6 +169,7 @@ def edge_filtering(S, edge_list, co=0, type_='out'):
     return edges
 
 def make_connected(edges, I, S, S_out, state, check_cond='desc'):
+    # Find extra edges if condition fails. See also: check_feasibility
     component_nodes = [k for k,v in state.items() if v == False]
     directed_nodes = [k for k,v in state.items() if v == True]
     source = directed_nodes if check_cond == 'desc' else component_nodes
@@ -151,7 +199,8 @@ def make_connected(edges, I, S, S_out, state, check_cond='desc'):
         I[extra_edge[0]][extra_edge[1]] = 1
 
 def check_feasibility(nodes, edges, I, S, S_out):
-    # Check all nodes are end ancestors
+    # Perform two DFS types to check conditions:
+    # 1. All nodes are end ancestors
     def isAncestor(start, node):
         marked[node] = True
         try: successors = I[node]
@@ -169,7 +218,7 @@ def check_feasibility(nodes, edges, I, S, S_out):
             isAncestor(v, v)
         if all(end_ancestor): break
         else: make_connected(edges, I, S, S_out, end_ancestor, 'anc')
-    # Check all nodes are start descendants
+    # 2. All nodes are start descendants
     def isDescendant(node):
         start_descendant[node] = True
         try: successors = I[node]

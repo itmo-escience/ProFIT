@@ -2,6 +2,35 @@ import os, sys
 from util_func import *
 
 def process_map(log, activity_rate, path_rate):
+    """ Perform process model discovery and simplification.
+    
+    Returns a transition matrix as a dictionary and lists of
+    nodes and edges filtrated.
+    
+    Parameters
+    ----------
+    log: Log
+        Ordered records of events
+    activity_rate: float
+        The inverse value to node significance threshold: the
+        more it is, the more activities are observed in the model
+    path_rate: float
+        The inverse value to edge significance threshold: the
+        more it is, the more transitions are observed in the model
+    
+    References
+    ----------
+    .. [1] Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
+    .. [2] Günther, C. W., & Van Der Aalst, W. M. (2007, September). Fuzzy 
+           mining–adaptive process simplification based on multi-perspective 
+           metrics. In International conference on business process management 
+           (pp. 328-343). Springer, Berlin, Heidelberg.
+    
+    Examples
+    --------
+    >>> log = Log("../PATH/LOG-FILE.csv")
+    >>> pm = ProcessMap(log, 100, 5)
+    """
     assert 0 <= activity_rate <= 100, "Activity rate is out of range (it should be from 0 to 100)"
     assert 0 <= path_rate <= 100, "Path rate is out of range (it should be from 0 to 100)"
     
@@ -49,10 +78,30 @@ def process_map(log, activity_rate, path_rate):
     return T, activities, transitions
 
 def pm_optimized(log, lambd, step):
+    """ Perform optimized process model discovery.
+    
+    Returns a transition matrix as a dictionary and lists of
+    nodes and edges and a dictionary of the model's optimal rates.
+    
+    Parameters
+    ----------
+    log: Log
+        Ordered records of events
+    lambd: float
+        Regularization coefficient of completeness and comprehension
+        of process model
+    step: int / float / list
+        The step value or list of grid points for the search space
+    
+    See Also
+    ---------
+    process_map
+    """
     assert type(step) in [int, float, list], \
     "Argument 'STEP' should be integer or float number or list of grid points"
     
     def Q(log, transits, N, M, theta1, theta2, lambd):
+        # Quality function (losses + regularization) to optimize
         _, nodes, edges = process_map(log, theta1, theta2)
         edges = [e for e in edges if (e[0] != 'start') | (e[1] != 'end')]
         n, m = len(nodes), len(edges)
