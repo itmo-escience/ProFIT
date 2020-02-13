@@ -1,6 +1,5 @@
 import os, sys
 from util_func import *
-import math
 
 def process_map(log, activity_rate, path_rate):
     """ Perform process model discovery and simplification.
