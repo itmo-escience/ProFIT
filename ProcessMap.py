@@ -2,16 +2,18 @@ import graphviz as gv
 from util_pm import *
 
 class ProcessMap(object):
-    """ Perform process model from event log.
+    """ Discover process model from event log.
     
     Attributes
     ----------
     T: dict
         Transition matrix
-    nodes: list
-        Set of activities in the model
-    edges: list
-        Set of transitions in the model
+    nodes: dict
+        Activities in the model and their frequencies
+        (absolute and case)
+    edges: dict
+        Transitions in the model and their frequencies
+        (absolute and case)
     rates: dict
         Activity and path rates of the model
     
@@ -26,7 +28,7 @@ class ProcessMap(object):
     >>> pm = ProcessMap(log, 100, 5)
     >>> pm_opt = ProcessMap(log, optimized=True)
     """
-    def __init__(self, log, activity_rate=100, path_rate=100, optimized=False, lambd=1, step=10):
+    def __init__(self, log, activity_rate=100, path_rate=100, aggregate=False, optimized=False, lambd=1, step=10):
         """ Class Constructor. 
         
         Provides optimized process model if optimized=True, else
@@ -44,6 +46,8 @@ class ProcessMap(object):
             The inverse value to edge significance threshold: the
             more it is, the more transitions are observed in the model
             (default 100)
+        aggregate: bool
+            Aggregate activities into meta-states (default False)
         optimized: bool
             Find optimal rates for process model (default False)
         lambd: float
@@ -58,6 +62,48 @@ class ProcessMap(object):
         else:
             self.T, self.nodes, self.edges = process_map(log, activity_rate, path_rate)
             self.rates = {'activities': activity_rate, 'paths': path_rate}
+        if aggregate:
+            SC = find_states(log, self)
+            fl, log.flat_log = log.flat_log, reconstruct_log(log, SC)
+            av, log.activities = log.activities, log.activities.union(set(SC))
+            _, self.nodes, self.edges = process_map(log, activity_rate, path_rate)
+            log.flat_log = fl
+    
+    def paths_search(self, source, target):
+        G = incidence_matrix(self.edges, ['start', 'end'])
+        paths = []
+        stack = [source]
+        
+        def DFS(node, end):
+            visited[node] = True
+            stack.append(node)
+            
+            try: successors = G[node]
+            except: successors = []
+            
+            for successor in successors:
+                if successor == end:
+                    paths.append(list(stack)+[end])
+                elif marked[successor] == True:
+                    G[successor] = dict()
+                elif visited[successor] == False:
+                    DFS(successor, end)
+            
+            stack.pop()
+            visited[node] = False
+        
+        marked = dict.fromkeys(self.nodes, False)
+        for v in G[source]:
+            if v == source: continue
+            if v == target:
+                paths.append([source, target])
+                continue
+            visited = dict.fromkeys(self.nodes, False)
+            visited[source] = True
+            DFS(v, target)
+            marked[v] = True
+        
+        return paths
 
     def cycles_search(self):
         """
@@ -68,8 +114,23 @@ class ProcessMap(object):
         List: of cycles found in the graph
         """
         G = incidence_matrix(self.edges)
+        nodes =  ['start', 'end'] + list(self.nodes)
         cycles = []
         stack = []
+        res = []
+        
+        visited = dict.fromkeys(nodes, False)
+        def preorder_traversal(start_node):
+            visited[start_node] = True
+            res.append(start_node)
+            try: successors = G[start_node]
+            except: successors = []
+            for successor in successors:
+                if not visited[successor]:
+                    preorder_traversal(successor)
+        
+        preorder_traversal('start')
+        nodes = res
         
         def DFS(start, node):
             visited[node] = True
@@ -84,14 +145,14 @@ class ProcessMap(object):
                 elif visited[successor] == False:
                     DFS(start, successor)
                 elif successor == start:
-                    cycles.append(list(stack))
+                    cycles.append(tuple(stack))
             
             stack.pop()
             visited[node] = False
         
-        marked = dict.fromkeys(self.nodes, False)
-        for v in self.nodes:
-            visited = dict.fromkeys(self.nodes, False)
+        marked = dict.fromkeys(nodes, False)
+        for v in nodes:
+            visited = dict.fromkeys(nodes, False)
             DFS(v, v)
             marked[v] = True
         
@@ -117,45 +178,29 @@ class ProcessMap(object):
         cycles_search
         """
         cycles = self.cycles_search()
-        cycles_nodes = {c for cyc in cycles for c in cyc}
-        cycle_count = {tuple(c) : 0 for c in cycles}
+        cycles.sort(key=len, reverse=True)
+        cycle_count = {c : [0,0] for c in cycles}
+        cycles_seq = {c: [c[i:len(c)]+c[0:i] for i in range(len(c))] \
+                                             for c in cycles}
+        to_add = {c: False for c in cycles}
         
-        cycle_event = dict()
-        for v in cycles_nodes:
-            tmp = [c for c in cycles if v in c]
-            cycle_event[v] = tmp
-        
-        for case_id in log.cases:
-            case_log = log.flat_log[case_id]
+        for case in log.flat_log:
+            case_log = log.flat_log[case]
             i = 0
             while i < len(case_log):
-                event = case_log[i]
-                if event in cycle_event:
-                    for c in cycle_event[event]:
-                        if (len(c) >= 2):
-                            j = i + 1
-                            k = c.index(event)
-                            k = k % (len(c) - 1) if k == len(c) - 1 else k + 1
-                            for l in range(len(c)):
-                                found = False
-                                try: next_event = case_log[j]
-                                except: break
-                                if (next_event == c[k]):
-                                    found = True
-                                    j += 1
-                                    k = k % (len(c) - 1) if k == len(c) - 1 else k + 1
-                                else: break
-                            if found:
-                                cycle_count[tuple(c)] += 1
-                                i += len(c) - 1
-                                break
-                        else:
-                            try: next_event = case_log[i + 1]
-                            except: continue
-                            if (event == next_event):
-                                cycle_count[tuple(c)] += 1
-                                break
+                for c in cycles:
+                    try: tmp = case_log[i:i+len(c)]
+                    except: continue
+                    if tmp == c:
+                        cycle_count[c][0] += 1
+                        i += len(c) - 1
+                        to_add[c] = True
+                        break
                 i += 1
+            for c in cycles:
+                if to_add[c]:
+                    cycle_count[c][1] += 1
+                    to_add[c] = False
         
         return cycle_count
 
@@ -178,16 +223,15 @@ class ProcessMap(object):
         """
         T, nodes, edges, rates = self.T, self.nodes, self.edges, self.rates
         G = gv.Digraph(strict=False, format='png')
-        G.attr(rankdir='TD')
+        G.attr(rankdir='TB')
         G.attr('edge', fontname='Sans Not-Rotated 14')
         G.attr('node', shape='box', style='filled', fontname='Sans Not-Rotated 14')
         
         # 1. Node color and shape
-        F = {a: sum([v[0] for v in T[a].values()]) for a in nodes} # Activities absolute frequencies
+        F = {a: nodes[a][0] for a in nodes} # Activities absolute frequencies
         case_cnt = sum([v[0] for v in T['start'].values()])
         x_max, x_min = max(F.values()), min(F.values())
         for a in nodes:
-            node_label = a + ' (' + str(F[a]) + ')'
             color = int((x_max - F[a]) / (x_max - x_min + 1e-6) * 100.)
             fill, font = "#ffffff", 'black'
             if colored:
@@ -198,24 +242,32 @@ class ProcessMap(object):
             else: fill = 'gray' + str(color)
             if color < 50:
                 font = 'white'
-            G.node(a, label=node_label, fillcolor=fill, fontcolor=font)
+            if type(a) == tuple:
+                node_label = a[0]
+                for i in range(1,len(a)):
+                    node_label += '\n' + a[i]
+                node_label += '\n(' + str(nodes[a][0]) + ')'
+                G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font, shape='octagon')
+            else:
+                node_label = a + ' (' + str(F[a]) + ')'
+                G.node(a, label=node_label, fillcolor=fill, fontcolor=font)
         G.node("start", shape="circle", label=str(case_cnt), \
                 fillcolor="#95d600" if colored else "#ffffff", margin='0.05')
         G.node("end", shape="doublecircle", label='', \
                 fillcolor="#ea4126" if colored else "#ffffff")
         
         # 2. Edge thickness and style
-        values = [T[a_i][a_j][0] for a_i in T for a_j in T[a_i] if (a_i in nodes) & (a_j in nodes)]
+        values = [edges[e][0] for e in edges]
         if values: t_min, t_max = min(values), max(values)
         for e in edges:
-            try: edge_label = T[e[0]][e[1]][0]
-            except:
-                G.edge(e[0], e[1], style='dotted')
+            if edges[e] == (0,0):
+                G.edge(str(e[0]), str(e[1]), style='dotted')
+                continue
             if (e[0] == 'start') | (e[1] == 'end'):
-                G.edge(e[0], e[1], label=str(edge_label), style='dashed')
+                G.edge(str(e[0]), str(e[1]), label=str(edges[e][0]), style='dashed')
             else:
-                y = 1.0 + (5.0 - 1.0) * (edge_label - t_min) / (t_max - t_min + 1e-6)
-                G.edge(e[0], e[1], label=str(edge_label), penwidth=str(y))
+                y = 1.0 + (5.0 - 1.0) * (edges[e][0] - t_min) / (t_max - t_min + 1e-6)
+                G.edge(str(e[0]), str(e[1]), label=str(edges[e][0]), penwidth=str(y))
         
         if save_path:
             gv_format_save = input("Save in GV format as well as in PNG? (y/n): ").lower() == 'y'
