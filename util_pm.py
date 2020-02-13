@@ -1,5 +1,6 @@
 import os, sys
 from util_func import *
+import math
 
 def process_map(log, activity_rate, path_rate):
     """ Perform process model discovery and simplification.
@@ -35,8 +36,9 @@ def process_map(log, activity_rate, path_rate):
     assert 0 <= path_rate <= 100, "Path rate is out of range (it should be from 0 to 100)"
     
     # 1. Node filtering
-    S = dict_normalization(node_significance(log), nested=False)
-    activities = [a for a in S if (S[a] >= (100 - activity_rate) / 100)]
+    S = node_significance(log)
+    S_norm = dict_normalization(S, nested=False)
+    activities = [a for a in S_norm if (S_norm[a] >= (100 - activity_rate) / 100)]
     
     # 2. Edge filtering
     T = transit_matrix(log)
@@ -46,36 +48,42 @@ def process_map(log, activity_rate, path_rate):
         transitions = [(a_i, a_j) for a_i in T for a_j in T[a_i] \
                        if (a_i in activities + ['start', 'end']) \
                        & (a_j in activities + ['start', 'end'])]
-        return T, activities, transitions
+    else:
+        # Significance matrix of outcoming edges
+        S_out = edge_sig(T, source=activities+['start'], target=activities+['end'], type_='out')
+        # Significance matrix of incoming edges (inverse outcoming)
+        S_in = edge_sig(T, source=activities+['end'], target=activities+['start'], type_='in')
+        # Self-loops case significance
+        S_loop = {a_i: T[a_i][a_j][1] / len(log.cases) for a_i in T for a_j in T[a_i] \
+                  if (a_i == a_j) & (a_i in activities)}
+        # Evaluate the relative significance of conflicting relations
+        rS = rel_sig(S_out, S_in)
+        
+        # Normalization
+        S_out_norm = dict_normalization(S_out, nested=True)
+        S_in_norm = dict_normalization(S_in, nested=True)
+        S_loop_norm = dict_normalization(S_loop)
+        
+        co = (100 - path_rate) / 100 # cut-off threshold
+        transitions = list(conflict_resolution(rS)) # initial set of transitions to preserve    
+        transitions = edge_filtering(S_in_norm, transitions, co=co, type_='in')
+        transitions = edge_filtering(S_out_norm, transitions, co=co, type_='out')
+        for a_i in S_loop_norm:
+            if (S_loop_norm[a_i] - 0.01 >= co) | (co == 0):
+                transitions.append((a_i,a_i))
+        
+        # 3. Check graph connectivity
+        I = incidence_matrix(transitions) # Filtered incidence matrix
+        check_feasibility(activities, transitions, T, I, S_norm, S_out_norm)
     
-    # Significance matrix of outcoming edges
-    S_out = edge_sig(T, source=activities+['start'], target=activities+['end'], type_='out')
-    # Significance matrix of incoming edges (inverse outcoming)
-    S_in = edge_sig(T, source=activities+['end'], target=activities+['start'], type_='in')
-    # Self-loops case significance
-    S_loop = {a_i: T[a_i][a_j][1] / len(log.cases) for a_i in T for a_j in T[a_i] \
-              if (a_i == a_j) & (a_i in activities)}
-    # Evaluate the relative significance of conflicting relations
-    rS = rel_sig(S_out, S_in)
+    activitiesDict = {a: (sum([v[0] for v in T[a].values()]), \
+                      S[a] * len(log.cases)) for a in activities}
+    transitionsDict = dict()
+    for t in transitions:
+        try: transitionsDict[tuple(t)] = T[t[0]][t[1]]
+        except: transitionsDict[tuple(t)] = (0,0)
     
-    # Normalization
-    S_out = dict_normalization(S_out, nested=True)
-    S_in = dict_normalization(S_in, nested=True)
-    S_loop = dict_normalization(S_loop)
-    
-    co = (100 - path_rate) / 100 # cut-off threshold
-    transitions = list(conflict_resolution(rS)) # initial set of transitions to preserve    
-    transitions = edge_filtering(S_in, transitions, co=co, type_='in')
-    transitions = edge_filtering(S_out, transitions, co=co, type_='out')
-    for a_i in S_loop:
-        if (S_loop[a_i] - 0.01 >= co) | (co == 0):
-            transitions.append((a_i,a_i))
-    
-    # 3. Check graph connectivity
-    I = incidence_matrix(transitions) # Filtered incidence matrix
-    check_feasibility(activities, transitions, I, S, S_out)
-    
-    return T, activities, transitions
+    return T, activitiesDict, transitionsDict
 
 def pm_optimized(log, lambd, step):
     """ Perform optimized process model discovery.
@@ -100,19 +108,54 @@ def pm_optimized(log, lambd, step):
     assert type(step) in [int, float, list], \
     "Argument 'STEP' should be integer or float number or list of grid points"
     
-    def Q(log, transits, N, M, theta1, theta2, lambd):
-        # Quality function (losses + regularization) to optimize
-        _, nodes, edges = process_map(log, theta1, theta2)
-        edges = [e for e in edges if (e[0] != 'start') | (e[1] != 'end')]
-        n, m = len(nodes), len(edges)
-        losses = len([e for e in transits if e not in edges])
-        
-        return losses/len(transits) + .5 * lambd * (m/M + n/N)
-    
     fl = log.flat_log
     activities = log.activities
     transits = [t for case_id in fl for t in zip(fl[case_id][:-1],fl[case_id][1:])]
     N, M = len(activities), len(set(transits))
+
+    def Q(log, transits, N, M, theta1, theta2, lambd):
+        # Quality function (losses + regularization) to optimize
+        T, nodes, edges = process_map(log, theta1, theta2)
+        case_cnt = sum([v[0] for v in T['start'].values()])
+        eps = 10**(-len(str(case_cnt)))
+        losses = 0
+        ADS = dict()
+        for v1 in list(activities)+['start']:
+            ADS[v1] = dict()
+            for v2 in list(activities)+['end']:
+                try: f_rel = T[v1][v2][1]
+                except: f_rel = -1
+                if f_rel == case_cnt:
+                    ADS[v1][v2] = 'A' # always
+                elif f_rel > 0:
+                    ADS[v1][v2] = 'S' # sometimes
+                elif f_rel == -1:
+                    ADS[v1][v2] = 'N' # never
+        
+        def loss(a_i, a_j):
+            loss = 0
+            if ADS[a_i][a_j] == 'A':
+                loss = 1
+            elif ADS[a_i][a_j] == 'S':
+                loss = T[a_i][a_j][1] / case_cnt
+            else:
+                loss = eps
+            return loss
+
+        for trace in log.flat_log:
+            losses += loss('start', log.flat_log[trace][0])
+            for i in range(len(log.flat_log[trace])-1):
+                a_i = log.flat_log[trace][i]
+                a_j = log.flat_log[trace][i+1]
+                if (a_i,a_j) in edges:
+                    continue
+                else:
+                    losses += loss(a_i, a_j)
+            losses += loss(log.flat_log[trace][-1], 'end')
+
+        n, m = len(nodes), len(edges) 
+        
+        return (1/lambd)*losses/len(transits) + lambd * m/n
     
     Q_val = dict()
     if type(step) in [int, float]:

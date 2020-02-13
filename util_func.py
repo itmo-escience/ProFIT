@@ -168,7 +168,7 @@ def edge_filtering(S, edge_list, co=0, type_='out'):
             else: break
     return edges
 
-def make_connected(edges, I, S, S_out, state, check_cond='desc'):
+def make_connected(edges, T, I, S, S_out, state, check_cond='desc'):
     # Find extra edges if condition fails. See also: check_feasibility
     component_nodes = [k for k,v in state.items() if v == False]
     directed_nodes = [k for k,v in state.items() if v == True]
@@ -176,7 +176,7 @@ def make_connected(edges, I, S, S_out, state, check_cond='desc'):
     target = component_nodes if check_cond == 'desc' else directed_nodes
     extra_edges = dict()
     for node in source:
-        for a in I[node]:
+        for a in T[node]:
             if a in target:
                 extra_edges[(node,a)] = S_out[node][a]
     if len(extra_edges) == 0:
@@ -198,7 +198,7 @@ def make_connected(edges, I, S, S_out, state, check_cond='desc'):
             I[extra_edge[0]] = dict()
         I[extra_edge[0]][extra_edge[1]] = 1
 
-def check_feasibility(nodes, edges, I, S, S_out):
+def check_feasibility(nodes, edges, T, I, S, S_out):
     # Perform two DFS types to check conditions:
     # 1. All nodes are end ancestors
     def isAncestor(start, node):
@@ -216,8 +216,8 @@ def check_feasibility(nodes, edges, I, S, S_out):
         for v in nodes:
             marked = dict.fromkeys(nodes, False)
             isAncestor(v, v)
-        if all(end_ancestor): break
-        else: make_connected(edges, I, S, S_out, end_ancestor, 'anc')
+        if all(end_ancestor.values()): break
+        else: make_connected(edges, T, I, S, S_out, end_ancestor, 'anc')
     # 2. All nodes are start descendants
     def isDescendant(node):
         start_descendant[node] = True
@@ -230,5 +230,44 @@ def check_feasibility(nodes, edges, I, S, S_out):
     while True:
         start_descendant = dict.fromkeys(nodes, False)
         isDescendant('start')
-        if all(start_descendant): break
-        else: make_connected(edges, I, S, S_out, start_descendant, 'desc')
+        if all(start_descendant.values()): break
+        else: make_connected(edges, T, I, S, S_out, start_descendant, 'desc')
+
+
+def reconstruct_log(log, meta_states):
+    meta_states.sort(key=len, reverse=True)
+    states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \
+                                         for s in meta_states}
+    log1 = dict()
+    for case in log.flat_log:
+        case_log = log.flat_log[case]
+        case_log1 = []
+        aggregated = False
+        i = 0
+        while i < len(case_log):
+            for s in meta_states:
+                try: tmp = case_log[i:i+len(s)]
+                except: continue
+                if tmp == s:
+                    case_log1.append(s)
+                    i += len(s) - 1
+                    aggregated = True
+                    break
+            if not aggregated:
+                case_log1.append(case_log[i])
+            i += 1
+            aggregated = False
+        log1[case] = tuple(case_log1)
+    
+    return log1
+
+def find_states(log, procm):
+    case_cnt = sum([v[0] for v in procm.T['start'].values()])
+    cycles = procm.cycles_replay(log)
+    SC = [] # significant cycles
+    # Filtration
+    for c in cycles:
+        if len(c) == 1: continue
+        if (cycles[c][1] / case_cnt >= 0.5):
+            SC.append(c)
+    return SC
