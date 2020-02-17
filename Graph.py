@@ -15,7 +15,7 @@ class Graph():
         activities = [a for a in S_norm if S_norm[a] >= (1-activity_rate/100)]
         
         # 2. Edge filtering
-        T = transit_matrix(log, T)
+        T = transit_matrix(log, T.T)
         
         # Early algorithm stop
         if (path_rate == 100):
@@ -63,19 +63,18 @@ class Graph():
         self.edges = transitionsDict
 
     def optimize(self, log, T, lambd=1, step=10):
-
-        case_cnt = sum([v[0] for v in T['start'].values()])
+        
+        case_cnt = len(log.cases)
         eps = 10**(-len(str(case_cnt)))
-        ADS = ADS_matrix(log.activities, T) 
         transitions_cnt = len([1 for i in log.flat_log \
-                                 for j in log.flat_log[j]]) \
+                                 for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
 
         def Q(theta1, theta2, lambd):
             # Quality function (losses + regularization) to optimize
-            nodes, edges = self.update(log, theta1, theta2, T)
-            n, m = len(nodes), len(edges)
-            losses = self.fitness(log, T)
+            self.update(log, theta1, theta2, T)
+            n, m = len(self.nodes), len(self.edges)
+            losses = self.fitness(log, T.T)
             
             return (1/lambd)*losses/transitions_cnt + lambd * m/n
         
@@ -92,7 +91,7 @@ class Graph():
         if a != 100: Q_val[(100,100)] = Q(100, 100, lambd)
         print()
         Q_opt = min(Q_val, key=lambda theta: Q_val[theta])
-        self.nodes, self.edges = self.update(log, Q_opt[0], Q_opt[1], T)
+        self.update(log, Q_opt[0], Q_opt[1], T)
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
 
@@ -100,7 +99,7 @@ class Graph():
         SC = self.find_states(log)
         fl, log.flat_log = log.flat_log, reconstruct_log(log, SC)
         av, log.activities = log.activities, log.activities.union(set(SC))
-        self.nodes, self.edges = self.update(log, activity_rate, path_rate, T)
+        self.update(log, activity_rate, path_rate, T)
         log.flat_log = fl
 
     def cycles_search(self):
@@ -218,8 +217,10 @@ class Graph():
             TM = TransitionMatrix()
             TM.update(log)
             T = TM.T
-        ADS = ADS_matrix(log.activities, T)
+        ADS = ADS_matrix(log, T)
         
+        case_cnt = len(log.cases)
+
         def loss(a_i, a_j):
             loss = 0
             if ADS[a_i][a_j] == 'A':
@@ -236,7 +237,7 @@ class Graph():
             for i in range(len(log.flat_log[trace])-1):
                 a_i = log.flat_log[trace][i]
                 a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) in edges:
+                if (a_i,a_j) in self.edges:
                     continue
                 else:
                     losses += loss(a_i, a_j)

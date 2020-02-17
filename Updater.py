@@ -6,12 +6,12 @@ from Renderer import Renderer
 class Updater():
 
     def __init__(self):
-        Log = None
-        Rates = {'activities': 100, 'paths': 0}
-        Params = {'optimize': True, 'aggregate': False}
-        Observers = {'T': None,
-                       'Graph': None,
-                       'Renderer': None}
+        self.Log = None
+        self.Rates = {'activities': 100, 'paths': 0}
+        self.Params = {'optimize': True, 'aggregate': False}
+        self. Observers = {'T': None,
+                           'Graph': None,
+                           'Renderer': None}
 
     def get_T(self):
         T = TransitionMatrix()

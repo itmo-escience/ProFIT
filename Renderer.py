@@ -1,3 +1,4 @@
+from util_func import *
 import graphviz as gv
 import os
 
@@ -6,7 +7,7 @@ class Renderer():
     def __init__(self):
         self.GV = None
 
-    def update(self, TM, G):
+    def update(self, TM, G, colored=True):
         T, nodes, edges = TM.T, G.nodes, G.edges
         G = gv.Digraph(strict=False, format='png')
         G.attr(rankdir='TB')

@@ -94,7 +94,10 @@ def transit_matrix(log, T):
         T[e]['end'] = (process_end[e],process_end[e])
     return T
 
-def ADS_matrix(activities, T):
+def ADS_matrix(log, T):
+    case_cnt = len(log.cases)
+    T = transit_matrix(log, T)
+    activities = log.activities
     ADS = dict()
     for v1 in list(activities)+['start']:
         ADS[v1] = dict()

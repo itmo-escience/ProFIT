@@ -7,12 +7,12 @@ from Updater import Updater
 class ProcessMap():
 
     def __init__(self):
-        Log = None
-        Rates = {'activities': 100, 'paths': 0}
-        Params = {'optimize': True, 'aggregate': False}
-        __Observers = {'T': None,
-                       'Graph': None,
-                       'Renderer': None}
+        self.Log = None
+        self.Rates = {'activities': 100, 'paths': 0}
+        self.Params = {'optimize': True, 'aggregate': False}
+        self.__Observers = {'T': None,
+                            'Graph': None,
+                            'Renderer': None}
 
     def set_log(self, FILE_PATH, c=(0,1), *args, **kwargs):
         log = Log(FILE_PATH, cols=c, *args, **kwargs)
@@ -38,7 +38,7 @@ class ProcessMap():
         UPD.update()
         if self.Params['optimize']:
             self.Rates = UPD.Rates
-        self.__Observers = UPD.__Observers
+        self.__Observers = UPD.Observers
 
     def get_log(self):
         return self.Log
