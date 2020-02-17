@@ -78,9 +78,8 @@ def node_significance(log):
     S = {a: caseF[a] / len(log.cases) for a in caseF}
     return S
 
-def transit_matrix(log):
+def transit_matrix(log, T):
     # Transition matrix with 'start' and 'end' nodes 
-    T = log.transit_matrix()
     process_start, process_end = dict(), dict()
     for case_id in log.flat_log:
         s = log.flat_log[case_id][0]
@@ -94,6 +93,21 @@ def transit_matrix(log):
         if e not in T: T[e] = dict()
         T[e]['end'] = (process_end[e],process_end[e])
     return T
+
+def ADS_matrix(activities, T):
+    ADS = dict()
+    for v1 in list(activities)+['start']:
+        ADS[v1] = dict()
+        for v2 in list(activities)+['end']:
+            try: f_rel = T[v1][v2][1]
+            except: f_rel = -1
+            if f_rel == case_cnt:
+                ADS[v1][v2] = 'A' # always
+            elif f_rel > 0:
+                ADS[v1][v2] = 'S' # sometimes
+            elif f_rel == -1:
+                ADS[v1][v2] = 'N' # never
+    return ADS
 
 def edge_sig(T, source=[], target=[], type_='out'):
     # Edge case significance
@@ -233,7 +247,6 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         if all(start_descendant.values()): break
         else: make_connected(edges, T, I, S, S_out, start_descendant, 'desc')
 
-
 def reconstruct_log(log, meta_states):
     meta_states.sort(key=len, reverse=True)
     states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \
@@ -260,14 +273,3 @@ def reconstruct_log(log, meta_states):
         log1[case] = tuple(case_log1)
     
     return log1
-
-def find_states(log, procm):
-    case_cnt = sum([v[0] for v in procm.T['start'].values()])
-    cycles = procm.cycles_replay(log)
-    SC = [] # significant cycles
-    # Filtration
-    for c in cycles:
-        if len(c) == 1: continue
-        if (cycles[c][1] / case_cnt >= 0.5):
-            SC.append(c)
-    return SC
