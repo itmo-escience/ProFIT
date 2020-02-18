@@ -62,7 +62,7 @@ class Graph():
         self.nodes = activitiesDict
         self.edges = transitionsDict
 
-    def optimize(self, log, T, lambd=1, step=10):
+    def optimize(self, log, T, lambd=0.5, step=10):
         
         case_cnt = len(log.cases)
         eps = 10**(-len(str(case_cnt)))
