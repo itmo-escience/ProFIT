@@ -185,36 +185,6 @@ def edge_filtering(S, edge_list, co=0, type_='out'):
             else: break
     return edges
 
-def make_connected(edges, T, I, S, S_out, state, check_cond='desc'):
-    # Find extra edges if condition fails. See also: check_feasibility
-    component_nodes = [k for k,v in state.items() if v == False]
-    directed_nodes = [k for k,v in state.items() if v == True]
-    source = directed_nodes if check_cond == 'desc' else component_nodes
-    target = component_nodes if check_cond == 'desc' else directed_nodes
-    extra_edges = dict()
-    for node in source:
-        for a in T[node]:
-            if a in target:
-                extra_edges[(node,a)] = S_out[node][a]
-    if len(extra_edges) == 0:
-        S_comp = {k:v for k,v in S.items() if k in component_nodes}
-        if check_cond == 'desc':
-            edges.append(('start', max(S_comp, key=S_comp.get)))
-            if 'start' not in I:
-                I['start'] = dict()
-            I['start'][max(S_comp, key=S_comp.get)] = 1
-        else:
-            edges.append((max(S_comp, key=S_comp.get), 'end'))
-            if max(S_comp, key=S_comp.get) not in I:
-                I[max(S_comp, key=S_comp.get)] = dict()
-            I[max(S_comp, key=S_comp.get)]['end'] = 1
-    else:
-        extra_edge = max(extra_edges, key=extra_edges.get)
-        edges.append((extra_edge[0], extra_edge[1]))
-        if extra_edge[0] not in I:
-            I[extra_edge[0]] = dict()
-        I[extra_edge[0]][extra_edge[1]] = 1
-
 def check_feasibility(nodes, edges, T, I, S, S_out):
     # Perform two DFS types to check conditions:
     # 1. All nodes are end ancestors
@@ -228,13 +198,7 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
             for successor in successors:
                 if marked[successor] == False:
                     isAncestor(start, successor)
-    while True:
-        end_ancestor = dict.fromkeys(nodes, False)
-        for v in nodes:
-            marked = dict.fromkeys(nodes, False)
-            isAncestor(v, v)
-        if all(end_ancestor.values()): break
-        else: make_connected(edges, T, I, S, S_out, end_ancestor, 'anc')
+
     # 2. All nodes are start descendants
     def isDescendant(node):
         start_descendant[node] = True
@@ -244,11 +208,50 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
             if successor != 'end':
                 if start_descendant[successor] == False:
                     isDescendant(successor)
+    
+    # Find extra edges if condition fails.
+    def make_connected(edges, state, check_cond='desc'):
+        component_nodes = [k for k,v in state.items() if v == False]
+        directed_nodes = [k for k,v in state.items() if v == True]
+        source = directed_nodes if check_cond == 'desc' else component_nodes
+        target = component_nodes if check_cond == 'desc' else directed_nodes
+        extra_edges = dict()
+        for node in source:
+            for a in T[node]:
+                if a in target:
+                    extra_edges[(node,a)] = S_out[node][a]
+        if len(extra_edges) == 0:
+            S_comp = {k:v for k,v in S.items() if k in component_nodes}
+            if check_cond == 'desc':
+                edges.append(('start', max(S_comp, key=S_comp.get)))
+                if 'start' not in I:
+                    I['start'] = dict()
+                I['start'][max(S_comp, key=S_comp.get)] = 1
+            else:
+                edges.append((max(S_comp, key=S_comp.get), 'end'))
+                if max(S_comp, key=S_comp.get) not in I:
+                    I[max(S_comp, key=S_comp.get)] = dict()
+                I[max(S_comp, key=S_comp.get)]['end'] = 1
+        else:
+            extra_edge = max(extra_edges, key=extra_edges.get)
+            edges.append((extra_edge[0], extra_edge[1]))
+            if extra_edge[0] not in I:
+                I[extra_edge[0]] = dict()
+            I[extra_edge[0]][extra_edge[1]] = 1
+
+    while True:
+        end_ancestor = dict.fromkeys(nodes, False)
+        for v in nodes:
+            marked = dict.fromkeys(nodes, False)
+            isAncestor(v, v)
+        if all(end_ancestor.values()): break
+        else: make_connected(edges, end_ancestor, 'anc')
+
     while True:
         start_descendant = dict.fromkeys(nodes, False)
         isDescendant('start')
         if all(start_descendant.values()): break
-        else: make_connected(edges, T, I, S, S_out, start_descendant, 'desc')
+        else: make_connected(edges, start_descendant, 'desc')
 
 def reconstruct_log(log, meta_states):
     meta_states.sort(key=len, reverse=True)
