@@ -62,7 +62,7 @@ class Graph():
         self.nodes = activitiesDict
         self.edges = transitionsDict
 
-    def optimize(self, log, T, lambd=0.5, step=10):
+    def optimize(self, log, T, lambd, step):
         
         case_cnt = len(log.cases)
         eps = 10**(-len(str(case_cnt)))
@@ -95,14 +95,15 @@ class Graph():
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
 
-    def aggregate(self, log, activity_rate, path_rate, T):
-        SC = self.find_states(log)
-        fl, log.flat_log = log.flat_log, reconstruct_log(log, SC)
+    def aggregate(self, log, activity_rate, path_rate, T, 
+                        pre_traverse=False, ordered=False):
+        SC = self.find_states(log, pre_traverse, ordered)
+        fl, log.flat_log = log.flat_log, reconstruct_log(log, SC, ordered)
         av, log.activities = log.activities, log.activities.union(set(SC))
         self.update(log, activity_rate, path_rate, T)
         log.flat_log = fl
 
-    def cycles_search(self):
+    def cycles_search(self, pre_traverse=False):
         """
         Perform DFS for cycles search in graph (process model).
         
@@ -126,8 +127,9 @@ class Graph():
                 if not visited[successor]:
                     preorder_traversal(successor)
         
-        preorder_traversal('start')
-        nodes = res
+        if pre_traverse:
+            preorder_traversal('start')
+            nodes = res
         
         def DFS(start, node):
             visited[node] = True
@@ -155,7 +157,7 @@ class Graph():
         
         return cycles
 
-    def cycles_replay(self, log):
+    def cycles_replay(self, log, cycles=[], ordered=False):
         """
         Replay log and count occurrence of cycles found
         in the process model.
@@ -174,7 +176,8 @@ class Graph():
         --------
         cycles_search
         """
-        cycles = self.cycles_search()
+        if not cycles:
+            cycles = self.cycles_search()
         cycles.sort(key=len, reverse=True)
         cycle_count = {c : [0,0] for c in cycles}
         cycles_seq = {c: [c[i:len(c)]+c[0:i] for i in range(len(c))] \
@@ -188,7 +191,10 @@ class Graph():
                 for c in cycles:
                     try: tmp = case_log[i:i+len(c)]
                     except: continue
-                    if tmp == c:
+                    if ordered:
+                        cond = (tmp == c)
+                    else: cond = (tmp in cycles_seq[c])
+                    if cond:
                         cycle_count[c][0] += 1
                         i += len(c) - 1
                         to_add[c] = True
@@ -201,9 +207,10 @@ class Graph():
         
         return cycle_count
 
-    def find_states(self, log):
+    def find_states(self, log, ordered=False, pre_traverse=False):
         case_cnt = len(log.cases)
-        cycles = self.cycles_replay(log)
+        cycles = self.cycles_search(pre_traverse)
+        cycles = self.cycles_replay(log, cycles, ordered)
         SC = [] # significant cycles
         # Filtration
         for c in cycles:

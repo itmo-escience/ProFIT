@@ -1,4 +1,9 @@
-from util_func import *
+color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
+             range(20,30) : "#1f3b98", range(30,40) : "#1946ba",
+             range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
+             range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
+             range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
+
 import graphviz as gv
 import os
 
@@ -58,9 +63,11 @@ class Renderer():
         
         self.GV = G
 
-    def save(self, save_path): 
+    def save(self, save_path=None): 
         gv_format_save = input("Save in GV format? (y/n): ").lower() == 'y'
         save_name = input("Enter file name: ")
+        if save_path == None:
+            save_path = os.path.dirname(os.path.abspath(__file__))
         self.GV.render(save_path + save_name, view=False)
         if not gv_format_save:
             os.remove(save_path + save_name)

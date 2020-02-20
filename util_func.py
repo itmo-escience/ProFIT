@@ -1,9 +1,3 @@
-color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
-             range(20,30) : "#1f3b98", range(30,40) : "#1946ba",
-             range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
-             range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
-             range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
-
 def incidence_matrix(edges, excpt=[]):
     """ Perform an incidence matrix
 
@@ -253,7 +247,7 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         if all(start_descendant.values()): break
         else: make_connected(edges, start_descendant, 'desc')
 
-def reconstruct_log(log, meta_states):
+def reconstruct_log(log, meta_states, ordered=False):
     meta_states.sort(key=len, reverse=True)
     states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \
                                          for s in meta_states}
@@ -267,7 +261,10 @@ def reconstruct_log(log, meta_states):
             for s in meta_states:
                 try: tmp = case_log[i:i+len(s)]
                 except: continue
-                if tmp == s:
+                if ordered:
+                    cond = (tmp == s)
+                else: cond = (tmp in states_seq[s])
+                if cond:
                     case_log1.append(s)
                     i += len(s) - 1
                     aggregated = True
