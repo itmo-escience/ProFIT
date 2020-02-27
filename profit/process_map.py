@@ -1,7 +1,7 @@
-from Log import Log
-from TransitionMatrix import TransitionMatrix
-from Graph import Graph
-from Renderer import Renderer
+from log import Log
+from transition_matrix import TransitionMatrix
+from graph import Graph
+from renderer import Renderer
 
 class ProcessMap():
     """Class to perform a process model from event log.
