@@ -1,14 +1,6 @@
-color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
-             range(20,30) : "#1f3b98", range(30,40) : "#1946ba",
-             range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
-             range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
-             range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
-
 def incidence_matrix(edges, excpt=[]):
-    """ Perform an incidence matrix
-
-    Returns the matrix as dict where 1 indicates a
-    relationship between two nodes in a directed graph.
+    """Return an incidence matrix as dict where 1 indicates
+    a relationship between two nodes in a directed graph.
     
     Parameters
     ----------
@@ -31,10 +23,7 @@ def incidence_matrix(edges, excpt=[]):
     return I
 
 def dict_normalization(dict_, nested=False):
-    """ Perform dictionary normalization as matrix's
-    rows normalization
-    
-    Returns normalized along rows matrix as a dictionary.
+    """Return normalized along rows matrix as a dictionary.
     
     Parameters
     ----------
@@ -67,19 +56,18 @@ def dict_normalization(dict_, nested=False):
     return dict_norm
 
 def node_significance(log):
-    # Node case significance
-    # Activities case frequencies
+    """Return node significance, i.e. activities case frequencies."""
     caseF = dict()
     for a in log.activities:
         caseF[a] = 0
         for case_id in log.flat_log:
             if a in log.flat_log[case_id]: caseF[a] += 1
-    # Activities significance
+    # Activities (node) significance
     S = {a: caseF[a] / len(log.cases) for a in caseF}
     return S
 
 def transit_matrix(log, T):
-    # Transition matrix with 'start' and 'end' nodes 
+    """Return transition matrix with 'start' and 'end' nodes."""
     process_start, process_end = dict(), dict()
     for case_id in log.flat_log:
         s = log.flat_log[case_id][0]
@@ -95,6 +83,10 @@ def transit_matrix(log, T):
     return T
 
 def ADS_matrix(log, T):
+    """Return a matrix that represents whether events in the log 
+    actually always (A), never (N), or sometimes (S) followed each 
+    other.
+    """
     case_cnt = len(log.cases)
     T = transit_matrix(log, T)
     activities = log.activities
@@ -113,7 +105,22 @@ def ADS_matrix(log, T):
     return ADS
 
 def edge_sig(T, source=[], target=[], type_='out'):
-    # Edge case significance
+    """Return edge significance, i.e. transitions case frequencies.
+    
+    Parameters
+    ----------
+    T: dict
+        Transition matrix as a dictionary
+    source: list
+        Nodes that have outcoming edges
+        (default [])
+    target: list
+        Nodes that have incoming edges
+        (default [])
+    type_: str
+        Determine type of edges (in- or outcoming)
+        to filtrate (default 'out')
+    """
     case_cnt = sum([v[0] for v in T['start'].values()])
     S = dict()
     for a_i in source:
@@ -127,7 +134,7 @@ def edge_sig(T, source=[], target=[], type_='out'):
     return S
 
 def rel_sig(S_out, S_in):
-    # Relative significance of conflicting relations
+    """Return relative significance of conflicting relations."""
     rS = dict()
     for A in S_out:
         rS[A] = dict()
@@ -140,7 +147,25 @@ def rel_sig(S_out, S_in):
     return rS
 
 def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
-    # Determine the most significant behavior in the process
+    """Determine the most significant behavior in the process. Return
+    a set of preserved edges.
+
+    Parameters
+    ----------
+    rS: dict
+        Relative significance matrix
+    pth: float
+        Preserve threshold (default 0.3)
+    rth: float
+        Ratio threshold (default 0.2)
+
+    References
+    ----------
+    .. [1] Günther, C. W., & Van Der Aalst, W. M. (2007, September). Fuzzy 
+           mining–adaptive process simplification based on multi-perspective 
+           metrics. In International conference on business process management 
+           (pp. 328-343). Springer, Berlin, Heidelberg.
+    """
     ttp = [] # transitions in conflict to preserve
     for A in rS:
         for B in rS[A]:
@@ -155,9 +180,7 @@ def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
     return set(ttp)
 
 def edge_filtering(S, edge_list, co=0, type_='out'):
-    """ Process model simplification
-
-    Returns filtrated set of edges.
+    """Process model simplification. Return filtrated set of edges.
 
     Parameters
     ----------
@@ -186,7 +209,7 @@ def edge_filtering(S, edge_list, co=0, type_='out'):
     return edges
 
 def check_feasibility(nodes, edges, T, I, S, S_out):
-    # Perform two DFS types to check conditions:
+    """Perform two DFS types to check conditions."""
     # 1. All nodes are end ancestors
     def isAncestor(start, node):
         marked[node] = True
@@ -253,7 +276,11 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         if all(start_descendant.values()): break
         else: make_connected(edges, start_descendant, 'desc')
 
-def reconstruct_log(log, meta_states):
+def reconstruct_log(log, meta_states, ordered=False):
+    """Rebuild log according to meta states found in the model.
+    If ordered=True, the order of meta state activities is fixed
+    strictly.
+    """
     meta_states.sort(key=len, reverse=True)
     states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \
                                          for s in meta_states}
@@ -267,7 +294,10 @@ def reconstruct_log(log, meta_states):
             for s in meta_states:
                 try: tmp = case_log[i:i+len(s)]
                 except: continue
-                if tmp == s:
+                if ordered:
+                    cond = (tmp == s)
+                else: cond = (tmp in states_seq[s])
+                if cond:
                     case_log1.append(s)
                     i += len(s) - 1
                     aggregated = True

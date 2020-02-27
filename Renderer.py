@@ -1,13 +1,38 @@
-from util_func import *
+color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
+             range(20,30) : "#1f3b98", range(30,40) : "#1946ba",
+             range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
+             range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
+             range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
+
 import graphviz as gv
 import os
 
 class Renderer():
+    """Class to represent the visualization of a process model."""
 
     def __init__(self):
+        """GV attribute (default None) represents dot format (directed) graph 
+        object that can be rendered with the Graphviz installation."""
         self.GV = None
 
     def update(self, TM, G, colored=True):
+        """Update graph object (GV attribute) and its representation: elements 
+        count, node color, edge thickness, etc.
+
+        Parameters
+        ----------
+        TM: TransitionMatrix
+            A matrix describing the transitions of a Markov chain
+        G: Graph
+            Graph structure of the model
+        colored: bool
+            Whether represent graph elements in color or in black
+            and white (default True)
+
+        References
+        ----------
+        .. [1] Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
+        """
         T, nodes, edges = TM.T, G.nodes, G.edges
         G = gv.Digraph(strict=False, format='png')
         G.attr(rankdir='TB')
@@ -58,9 +83,14 @@ class Renderer():
         
         self.GV = G
 
-    def save(self, save_path): 
+    def save(self, save_path=None):
+        """Render and save graph in PNG (GV) format in the working directory,
+        if no path to specific directory was indicated in save_path.
+        """
         gv_format_save = input("Save in GV format? (y/n): ").lower() == 'y'
         save_name = input("Enter file name: ")
+        if save_path == None:
+            save_path = os.path.dirname(os.path.abspath(__file__))
         self.GV.render(save_path + save_name, view=False)
         if not gv_format_save:
             os.remove(save_path + save_name)

@@ -1,9 +1,19 @@
 class TransitionMatrix():
+    """Class to represent a transition matrix that 
+    describes the transitions of a Markov chain.
+    """
 
     def __init__(self):
+        """"Transition matrix is represented in the T attribute
+        (default empty dictionary).
+        """
         self.T = dict()
 
     def update(self, log):
+        """Transition matrix as dictionary indicating relations 
+        between activities, i.e. their following each other in
+        the log, and their absolute and case frequencies.
+        """
         T = dict()
         to_add = dict()
         for case_id in log:

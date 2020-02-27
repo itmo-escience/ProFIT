@@ -2,13 +2,46 @@ from util_func import *
 import sys
 
 class Graph():
+    """Class to represent process model as a graph structure."""
 
     def __init__(self):
+        """Graph object as a set of nodes (default None) and 
+        a set of edges (default None).
+        """
         self.nodes = None
         self.edges = None
 
     def update(self, log, activity_rate, path_rate, T):
-    
+        """Update nodes and edges attributes performing node
+        and edge filtering according to activity and path rates,
+        respectively.
+
+        Parameters
+        ----------
+        log: Log
+            Ordered records of events
+        activity_rate: float
+            The inverse value to node significance threshold: the
+            more it is, the more activities are observed in the model
+        path_rate: float
+            The inverse value to edge significance threshold: the
+            more it is, the more transitions are observed in the model
+        T: TransitionMatrix
+            A matrix describing the transitions of a Markov chain
+
+        See Also
+        ---------
+        Log
+        TransitionMatrix
+
+        References
+        ----------
+        .. [1] Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
+        .. [2] Günther, C. W., & Van Der Aalst, W. M. (2007, September). Fuzzy 
+               mining–adaptive process simplification based on multi-perspective 
+               metrics. In International conference on business process management 
+               (pp. 328-343). Springer, Berlin, Heidelberg.
+        """
         # 1. Node filtering
         S = node_significance(log)
         S_norm = dict_normalization(S, nested=False)
@@ -62,8 +95,32 @@ class Graph():
         self.nodes = activitiesDict
         self.edges = transitionsDict
 
-    def optimize(self, log, T, lambd=0.5, step=10):
+    def optimize(self, log, T, lambd, step):
+        """Find optimal rates for the process model in terms of
+        completeness and comprehension via quality function
+        optimization.
         
+        Parameters
+        ----------
+        log: Log
+            Ordered records of events
+        T: TransitionMatrix
+            A matrix describing the transitions of a Markov chain
+        lambd: float
+            Regularization term coefficient: the more it is, the
+            more penalty for the model complexity is
+        step: int / float / list
+            Step value or list of grid points for the search space
+
+        Returns
+        =======
+        dict: optimal activities and paths rates
+
+        See Also
+        ---------
+        Log
+        TransitionMatrix
+        """
         case_cnt = len(log.cases)
         eps = 10**(-len(str(case_cnt)))
         transitions_cnt = len([1 for i in log.flat_log \
@@ -71,44 +128,62 @@ class Graph():
                           + len(log.flat_log.keys())
 
         def Q(theta1, theta2, lambd):
-            # Quality function (losses + regularization) to optimize
+            """Quality (cost) function (losses + regularization term).
+            The losses are defined by fitness function (see fitness) 
+            and the regularization term is the average degree of a 
+            directed graph.
+            """
             self.update(log, theta1, theta2, T)
             n, m = len(self.nodes), len(self.edges)
             losses = self.fitness(log, T.T)
             
             return (1/lambd)*losses/transitions_cnt + lambd * m/n
         
-        Q_val = dict()
+        Q_val = dict() 
         per_done = 0
-        per_step = 100 / (100//step + 1)**2
-        for a in range(0,101,step):
-            for p in range(0,101,step):
+        if type(step) in [int, float]:
+            per_step = 100 / (100//step + 1)**2
+            grid = range(0,101,step)
+        else: 
+            per_step = 100 / len(step)
+            grid = step
+
+        for a in grid:
+            for p in grid:
                 Q_val[(a,p)] = Q(a, p, lambd)
                 per_done += per_step
-                sys.stdout.write("\rOptimization ..... {0:.2f}%".format(per_done))
+                sys.stdout.write("\rOptimization ..... {0:.2f}%".\
+                                                format(per_done))
                 sys.stdout.flush()
-            if p != 100: Q_val[(a,100)] = Q(a, 100, lambd)
-        if a != 100: Q_val[(100,100)] = Q(100, 100, lambd)
+            if (p != 100) & (type(grid) == range): 
+                Q_val[(a,100)] = Q(a, 100, lambd)
+        if (a != 100) & (type(grid) == range): 
+            Q_val[(100,100)] = Q(100, 100, lambd)
         print()
         Q_opt = min(Q_val, key=lambda theta: Q_val[theta])
         self.update(log, Q_opt[0], Q_opt[1], T)
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
 
-    def aggregate(self, log, activity_rate, path_rate, T):
-        SC = self.find_states(log)
-        fl, log.flat_log = log.flat_log, reconstruct_log(log, SC)
+    def aggregate(self, log, activity_rate, path_rate, T, 
+                        pre_traverse=False, ordered=False):
+        """Aggregate cycle nodes into meta state, if it is 
+        significant one. Note: the log is not changed.
+
+        See also
+        --------
+        find_states
+        reconstruct_log
+        """
+        SC = self.find_states(log, pre_traverse, ordered)
+        fl, log.flat_log = log.flat_log, reconstruct_log(log, SC, ordered)
         av, log.activities = log.activities, log.activities.union(set(SC))
         self.update(log, activity_rate, path_rate, T)
         log.flat_log = fl
 
-    def cycles_search(self):
-        """
-        Perform DFS for cycles search in graph (process model).
-        
-        Returns
-        =======
-        List: of cycles found in the graph
+    def cycles_search(self, pre_traverse=False):
+        """Perform DFS for cycles search in a graph (process model).
+        Return list of cycles found in the graph.
         """
         G = incidence_matrix(self.edges)
         nodes =  ['start', 'end'] + list(self.nodes)
@@ -118,6 +193,9 @@ class Graph():
         
         visited = dict.fromkeys(nodes, False)
         def preorder_traversal(start_node):
+            """Define the order of nodes traverse starting
+            from the initial node ('start') of a process model.
+            """
             visited[start_node] = True
             res.append(start_node)
             try: successors = G[start_node]
@@ -126,8 +204,9 @@ class Graph():
                 if not visited[successor]:
                     preorder_traversal(successor)
         
-        preorder_traversal('start')
-        nodes = res
+        if pre_traverse:
+            preorder_traversal('start')
+            nodes = res
         
         def DFS(start, node):
             visited[node] = True
@@ -155,26 +234,31 @@ class Graph():
         
         return cycles
 
-    def cycles_replay(self, log):
-        """
-        Replay log and count occurrence of cycles found
+    def cycles_replay(self, log, cycles=[], ordered=False):
+        """Replay log and count occurrences of cycles found
         in the process model.
         
         Parameters
         ----------
         log: Log
             Ordered records of events to replay
+        cycles: list
+            List of cycles to count occurrences via log replay
+        ordered: bool
+            If True, the order of cycle activities is fixed
+            strictly (default False)
         
         Returns
         =======
-        Dict: with cycle as key and its occurrence frequency
-              in the log as value
+        dict: with cycle (tuple) as a key and its occurrence 
+            frequency in the log as a value
         
         See Also
         --------
         cycles_search
         """
-        cycles = self.cycles_search()
+        if not cycles:
+            cycles = self.cycles_search()
         cycles.sort(key=len, reverse=True)
         cycle_count = {c : [0,0] for c in cycles}
         cycles_seq = {c: [c[i:len(c)]+c[0:i] for i in range(len(c))] \
@@ -188,7 +272,10 @@ class Graph():
                 for c in cycles:
                     try: tmp = case_log[i:i+len(c)]
                     except: continue
-                    if tmp == c:
+                    if ordered:
+                        cond = (tmp == c)
+                    else: cond = (tmp in cycles_seq[c])
+                    if cond:
                         cycle_count[c][0] += 1
                         i += len(c) - 1
                         to_add[c] = True
@@ -201,9 +288,35 @@ class Graph():
         
         return cycle_count
 
-    def find_states(self, log):
+    def find_states(self, log, ordered=False, pre_traverse=False):
+        """Define meta states, i.e. significant cycles, in the model.
+        A cycle found in the model is significant, if it occurs more
+        than in a half of cases in the log.
+        
+        Parameters
+        ----------
+        log: Log
+            Ordered records of events to replay
+        ordered: bool
+            If True, the order of cycle activities is fixed
+            strictly (default False)
+        pre_traverse: bool
+            If True, performs graph traversal from 'start' node
+            to define the order of activities in the cycles
+            (default False)
+
+        Returns
+        =======
+        list: of significant cycles (meta states)
+
+        See also
+        --------
+        cycles_search
+        cycles_replay
+        """
         case_cnt = len(log.cases)
-        cycles = self.cycles_replay(log)
+        cycles = self.cycles_search(pre_traverse)
+        cycles = self.cycles_replay(log, cycles, ordered)
         SC = [] # significant cycles
         # Filtration
         for c in cycles:
@@ -213,6 +326,9 @@ class Graph():
         return SC
 
     def fitness(self, log, T=None):
+        """Return the value of a cost function that includes
+        only loss term.
+        """
         if T == None:
             TM = TransitionMatrix()
             TM.update(log)
@@ -222,6 +338,15 @@ class Graph():
         case_cnt = len(log.cases)
 
         def loss(a_i, a_j):
+            """Perform the loss function for log replay.
+            The biggest penalty is for the absence of 
+            transition in the model, if this transition
+            always presences in the log.
+
+            See also
+            --------
+            ADS_matrix
+            """
             loss = 0
             if ADS[a_i][a_j] == 'A':
                 loss = 1
