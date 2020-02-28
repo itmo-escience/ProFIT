@@ -71,6 +71,8 @@ class ProcessMap():
             colored: bool
                 Whether represent graph elements in color or in black
                 and white (default True)
+            verbose: bool
+                If True, show optimization progress bar (default False)
         """
         self.Log = None
         self.Rates = {'activities': 100, 'paths': 0}
@@ -80,7 +82,8 @@ class ProcessMap():
                        'step': 10,
                        'pre_traverse': False,
                        'ordered' : False,
-                       'colored': True}
+                       'colored': True,
+                       'verbose': False}
         self._Observers = {'T': None,
                            'Graph': None,
                            'Renderer': None}
@@ -142,7 +145,7 @@ class ProcessMap():
         """Return process model structure as a graph instance (see Graph)."""
         return self._Observers['Graph']
 
-    def render_map(self, save_path='', colored=True):
+    def render_map(self):
         """Return a graph object that can be rendered with the Graphviz 
         installation (see Renderer)."""
         return self._Observers['Renderer']
@@ -168,7 +171,8 @@ class Updater(ProcessMap):
             self.Rates = G.optimize(self.Log,
                                     self._Observers['T'],
                                     self.Params['lambd'],
-                                    self.Params['step'])
+                                    self.Params['step'],
+                                    self.Params['verbose'])
         else:
             G.update(self.Log,
                      self.Rates['activities'],
@@ -178,7 +182,6 @@ class Updater(ProcessMap):
             G.aggregate(self.Log,
                         self.Rates['activities'],
                         self.Rates['paths'],
-                        self._Observers['T'],
                         self.Params['pre_traverse'],
                         self.Params['ordered'])
         return G

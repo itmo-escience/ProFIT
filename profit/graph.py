@@ -1,3 +1,4 @@
+from transition_matrix import TransitionMatrix
 from util_func import *
 import sys
 
@@ -95,7 +96,7 @@ class Graph():
         self.nodes = activitiesDict
         self.edges = transitionsDict
 
-    def optimize(self, log, T, lambd, step):
+    def optimize(self, log, T, lambd, step, verbose=False):
         """Find optimal rates for the process model in terms of
         completeness and comprehension via quality function
         optimization.
@@ -151,6 +152,7 @@ class Graph():
         for a in grid:
             for p in grid:
                 Q_val[(a,p)] = Q(a, p, lambd)
+                if not verbose: continue
                 per_done += per_step
                 sys.stdout.write("\rOptimization ..... {0:.2f}%".\
                                                 format(per_done))
@@ -165,8 +167,8 @@ class Graph():
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
 
-    def aggregate(self, log, activity_rate, path_rate, T, 
-                        pre_traverse=False, ordered=False):
+    def aggregate(self, log, activity_rate, path_rate, 
+                    pre_traverse=False, ordered=False):
         """Aggregate cycle nodes into meta state, if it is 
         significant one. Note: the log is not changed.
 
@@ -178,6 +180,8 @@ class Graph():
         SC = self.find_states(log, pre_traverse, ordered)
         fl, log.flat_log = log.flat_log, reconstruct_log(log, SC, ordered)
         av, log.activities = log.activities, log.activities.union(set(SC))
+        T = TransitionMatrix()
+        T.update(log.flat_log)
         self.update(log, activity_rate, path_rate, T)
         log.flat_log = fl
 

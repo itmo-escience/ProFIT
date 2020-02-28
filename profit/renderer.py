@@ -83,6 +83,10 @@ class Renderer():
         
         self.GV = G
 
+    def show(self):
+        """Return graph in DOT language."""
+        return self.GV
+
     def save(self, save_path=None):
         """Render and save graph in PNG (GV) format in the working directory,
         if no path to specific directory was indicated in save_path.
