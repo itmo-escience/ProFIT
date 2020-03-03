@@ -126,8 +126,8 @@ class ProcessMap():
         self._Observers = UPD._Observers
 
     def get_log(self):
-        """Return a log instance (see Log)."""
-        return self.Log
+        """Return flat log (see Log)."""
+        return self.Log.flat_log
 
     def get_rates(self):
         """Return activities and paths rates."""
@@ -138,17 +138,19 @@ class ProcessMap():
         return self.Params
 
     def get_T(self):
-        """Return a transition matrix instance (see TransitionMatrix)."""
-        return self._Observers['T']
+        """Return transition matrix (see TransitionMatrix)."""
+        return self._Observers['T'].T
 
     def get_graph(self):
-        """Return process model structure as a graph instance (see Graph)."""
-        return self._Observers['Graph']
+        """Return process model structure as a set of edges (see Graph)."""
+        return self._Observers['Graph'].edges
 
-    def render_map(self):
+    def render(self, save_path=None):
         """Return a graph object that can be rendered with the Graphviz 
         installation (see Renderer)."""
-        return self._Observers['Renderer']
+        if save_path:
+            self._Observers['Renderer'].save(save_path)
+        return self._Observers['Renderer'].GV
 
 
 class Updater(ProcessMap):
