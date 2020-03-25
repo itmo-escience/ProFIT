@@ -32,7 +32,7 @@ One can change process model detail by tuning activities and paths rates: from t
 We also introduced an approach for process model simplification. Simplification of the process model can be done by aggregating nodes into meta-states. We assume cycle nodes to be a *meta-state*, if probability of cycle occurrence in the log exceeds specified threshold. This way one can distinguish most significant cyclic behavior, i.e. process stage, and exceptions.
 
 **List of main features ready**:
-- [x] Model complexity / completeness control via `set_params()` method (`activities`: int [0,100], `paths`: int [0,100]);
+- [x] Model complexity / completeness control via `set_rates()` method (`activities`: int [0,100], `paths`: int [0,100]);
 - [x] Optimized process model discovering via `set_params()` method (`optimize`: bool);
 - [x] Process model simplification by nodes aggregation via `set_params` method (`aggregate`: bool).
 
