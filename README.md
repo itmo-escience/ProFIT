@@ -34,7 +34,7 @@ We also introduced an approach for process model simplification. Simplification 
 **List of main features ready**:
 - [x] Model complexity / completeness control via `set_rates()` method (`activities`: int [0,100], `paths`: int [0,100]);
 - [x] Optimized process model discovering via `set_params()` method (`optimize`: bool);
-- [x] Process model simplification by nodes aggregation via `set_params` method (`aggregate`: bool).
+- [x] Process model simplification by nodes aggregation via `set_params()` method (`aggregate`: bool).
 
 **To-do list**:
 - [ ] Consider length-2(*k*)-relationship in log;
