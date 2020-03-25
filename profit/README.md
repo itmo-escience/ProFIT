@@ -10,6 +10,7 @@
   - `.get_T(self)`: Return transition matrix.
   - `.get_graph(self)`: Return process model structure as a set of edges.
   - `.render(self, save_path=None)`: Return a graph object that can be rendered with the Graphviz installation.
+
 * Class `Graph`
   - `.update(self, log, activity_rate, path_rate, T)`: Update nodes and edges attributes performing node and edge filtering according to activity and path rates, respectively.
   - `.optimize(self, log, T, lambd, step, verbose=False)`: Find optimal rates for the process model in terms of completeness and comprehension via quality function optimization.
