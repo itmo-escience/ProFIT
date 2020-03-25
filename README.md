@@ -12,9 +12,14 @@
 *Process mining* is an emerging discipline that have been developing for less than twenty years. Despite that fact, process mining is a promising approach to get insights into the real execution of processes in different organizations. Process mining is aimed to extract knowledge from routinely recorded data, *event logs*, that include information about completeness status of process steps with associated data, such as activities, resources, start/end timestamps, etc. There is a plenty of commercial and open-source software for process mining, but how to use the knowledge such tools extract from a log? In most cases one can perform an assessment of a process model only visualy. However, it would be desirable to extract knowledge *from* discovered process as well as from the event log. It could be data or formal structure describing the process one might use, e.g., in modelling. This is the main motivation for the ProFIT development that provides such an opportunity.
 
 ## Setup
-You can clone this repository with the `git clone` command on a local machine and add a directory with the package to PATH. To start work with the ProFIT, you should import `ProcessMap` from the `profit` module. 
+You can clone this repository with the `git clone` command on a local machine and add a directory with the package to PATH. To start work with ProFIT, you should import `ProcessMap` from the `profit` module. 
 
 See the details of how to use it in [demo jupyter notebook](https://github.com/Siella/ProFIT/blob/master/demo/profit_examples.ipynb).
+
+**Required packages**:
+* `Pandas`
+* `Graphviz`
+* `os`, `sys`
 
 ## Features
 Process model discovered by ProFIT is a state graph (see figure below) in the form of transition system like a finite state automation but with activities represented in nodes rather than in edges. The green node indicates the beginning of the process and shows the total number of cases presenting in the log, and the red node is related to the end of the process. The internal nodes and edges of the graph show the absolute frequencies of events and transitions, respectively: the more absolute value is, the darker or thicker element is. 
