@@ -1,4 +1,5 @@
 # Functionality
+The main functionality is presented below. For more details see docstrings in an appropriate module.
 * Class `ProcessMap`
   - `.set_log(self, FILE_PATH, cols=(0,1), *args, **kwargs)`: Set Log attribute of the class.
   - `.set_rates(self, activity_rate, path_rate)`: Set Rates attribute of the class.
