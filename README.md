@@ -18,9 +18,9 @@ See the details of how to use it in [demo jupyter notebook](https://github.com/S
 
 ## Features
 Process model discovered by ProFIT is a state graph (see figure below) in the form of transition system like a finite state automation but with activities represented in nodes rather than in edges. The green node indicates the beginning of the process and shows the total number of cases presenting in the log, and the red node is related to the end of the process. The internal nodes and edges of the graph show the absolute frequencies of events and transitions, respectively: the more absolute value is, the darker or thicker element is. 
+![Process model example](/meta/process.png)
 
 The proposed miner technique includes the basics of state-of-the-art *Fuzzy Miner*. However, the properties of Fuzzy nets (models produced by Fuzzy Miner) do not guarantee a reachable or even connected graph that is desired to see the complete behaviors of process traces. So, we perform depth-first search (DFS) on the state graph two times to check whether each node of the graph is a descendant of the initial state (“start”) and a parent of the terminal state (“end”) of the process. This way, the model adjusted represents an executable process.
-![Process model example](/meta/process.png)
 
 One can change process model detail by tuning activities and paths rates: from the simplest to complex and fullness one. But how to obtain the model automatically? To answer this question, we defined the problem of discovering an optimal process model. In this optimization problem, an objective function includes complexity and loss terms. Regularization parameter controls the balance between human comprehension and completeness of the process model, i.e. simplicity and complexity of the graph. Thus, one can discover process model optimized in one of the senses.
 
