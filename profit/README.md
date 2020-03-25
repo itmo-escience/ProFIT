@@ -19,3 +19,8 @@
   - `.cycles_replay(self, log, cycles=[], ordered=False)`: Replay log and count occurrences of cycles found in the process model.
   - `.find_states(self, log, ordered=False, pre_traverse=False)`: Define meta states in the model.
   - `.fitness(self, log, T=None)`: Return the value of a cost function that includes only loss term.
+
+* Class `Renderer`
+  - `.update(self, TM, G, colored=True)`: Update graph object and its representation.
+  - `.show(self)`: Return graph in DOT language.
+  - `.save(self, save_path=None)`: Render and save graph in PNG (GV) format in the working directory or in *save_path*.
