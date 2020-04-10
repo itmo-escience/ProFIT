@@ -35,7 +35,6 @@ class Renderer():
         """
         T, nodes, edges = TM.T, G.nodes, G.edges
         G = gv.Digraph(strict=False, format='png')
-        G.attr(rankdir='TB')
         G.attr('edge', fontname='Sans Not-Rotated 14')
         G.attr('node', shape='box', style='filled', fontname='Sans Not-Rotated 14')
         
@@ -55,14 +54,14 @@ class Renderer():
             if color < 50:
                 font = 'white'
             if type(a) == tuple:
-                node_label = a[0]
+                node_label = str(a[0])
                 for i in range(1,len(a)):
-                    node_label += '\n' + a[i]
+                    node_label += '\n' + str(a[i])
                 node_label += '\n(' + str(nodes[a][0]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font, shape='octagon')
             else:
                 node_label = a + ' (' + str(F[a]) + ')'
-                G.node(a, label=node_label, fillcolor=fill, fontcolor=font)
+                G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font)
         G.node("start", shape="circle", label=str(case_cnt), \
                 fillcolor="#95d600" if colored else "#ffffff", margin='0.05')
         G.node("end", shape="doublecircle", label='', \

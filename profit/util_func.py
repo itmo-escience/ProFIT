@@ -35,12 +35,13 @@ def dict_normalization(dict_, nested=False):
     """
     dict_norm = dict()
     if not nested:
-        d_max = max(dict_.values())
-        d_min = min(dict_.values())
-        if d_max - d_min == 0: 
-            dict_norm = {key: 1 for key in dict_}
-        else: 
-            dict_norm = {key: (dict_[key] - d_min) / (d_max - d_min) for key in dict_}
+        if dict_.values():
+            d_max = max(dict_.values())
+            d_min = min(dict_.values())
+            if d_max - d_min == 0: 
+                dict_norm = {key: 1 for key in dict_}
+            else: 
+                dict_norm = {key: (dict_[key] - d_min) / (d_max - d_min) for key in dict_}
     else:
         for key_1 in dict_:
             if dict_[key_1]:
@@ -277,9 +278,9 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         else: make_connected(edges, start_descendant, 'desc')
 
 def reconstruct_log(log, meta_states, ordered=False):
-    """Rebuild log according to meta states found in the model.
-    If ordered=True, the order of meta state activities is fixed
-    strictly.
+    """Rebuild (flat) log according to meta states found in the 
+    model. If ordered=True, the order of meta state activities 
+    is fixed strictly.
     """
     meta_states.sort(key=len, reverse=True)
     states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \

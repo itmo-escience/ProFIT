@@ -76,7 +76,7 @@ class ProcessMap():
         """
         self.Log = None
         self.Rates = {'activities': 100, 'paths': 0}
-        self.Params = {'optimize': True, 
+        self.Params = {'optimize': True,
                        'aggregate': False,
                        'lambd': 0.5,
                        'step': 10,
@@ -90,7 +90,8 @@ class ProcessMap():
 
     def set_log(self, FILE_PATH, cols=(0,1), *args, **kwargs):
         """Set Log attribute of the class."""
-        log = Log(FILE_PATH, cols=cols, *args, **kwargs)
+        log = Log()
+        log.update(FILE_PATH, cols=cols, *args, **kwargs)
         self.Log = log
 
     def set_rates(self, activity_rate, path_rate):
@@ -121,7 +122,7 @@ class ProcessMap():
         UPD.Rates = self.Rates
         UPD.Params = self.Params
         UPD.update()
-        if self.Params['optimize']:
+        if UPD.Params['optimize']:
             self.Rates = UPD.Rates
         self._Observers = UPD._Observers
 

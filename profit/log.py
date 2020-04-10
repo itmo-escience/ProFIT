@@ -17,8 +17,14 @@ class Log(object):
     --------
     >>> log = Log("../PATH/LOG-FILE.csv", encoding='cp1251')
     """
-    def __init__(self, FILE_PATH, cols=(0,1), *args, **kwargs):
-        """Class Constructor.
+    def __init__(self):
+        """Class Constructor."""
+        self.flat_log = dict()
+        self.cases = set()
+        self.activities = set()
+
+    def update(self, FILE_PATH, cols=(0,1), *args, **kwargs):
+        """Update attributes via file reading.
         
         Parameters
         ----------

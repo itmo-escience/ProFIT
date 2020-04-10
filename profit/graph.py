@@ -1,3 +1,4 @@
+from log import Log
 from transition_matrix import TransitionMatrix
 from util_func import *
 import sys
@@ -178,12 +179,13 @@ class Graph():
         reconstruct_log
         """
         SC = self.find_states(log, pre_traverse, ordered)
-        fl, log.flat_log = log.flat_log, reconstruct_log(log, SC, ordered)
-        av, log.activities = log.activities, log.activities.union(set(SC))
+        log_agg = Log()
+        log_agg.flat_log = reconstruct_log(log, SC, ordered)
+        log_agg.activities = log.activities.union(set(SC))
+        log_agg.cases = log.cases
         T = TransitionMatrix()
-        T.update(log.flat_log)
-        self.update(log, activity_rate, path_rate, T)
-        log.flat_log = fl
+        T.update(log_agg.flat_log)
+        self.update(log_agg, activity_rate, path_rate, T)
 
     def cycles_search(self, pre_traverse=False):
         """Perform DFS for cycles search in a graph (process model).
