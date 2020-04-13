@@ -92,7 +92,7 @@ class Graph():
         transitionsDict = dict()
         for t in transitions:
             try: transitionsDict[tuple(t)] = T[t[0]][t[1]]
-            except: transitionsDict[tuple(t)] = (0,0)
+            except: transitionsDict[tuple(t)] = (0,0) # "imaginary" edges
         
         self.nodes = activitiesDict
         self.edges = transitionsDict
@@ -123,8 +123,6 @@ class Graph():
         Log
         TransitionMatrix
         """
-        case_cnt = len(log.cases)
-        eps = 10**(-len(str(case_cnt)))
         transitions_cnt = len([1 for i in log.flat_log \
                                  for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
@@ -168,7 +166,8 @@ class Graph():
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
 
-    def aggregate(self, log, activity_rate, path_rate, 
+    def aggregate(self, log, activity_rate, path_rate,
+                    agg_type='outer', heuristic='all',
                     pre_traverse=False, ordered=False):
         """Aggregate cycle nodes into meta state, if it is 
         significant one. Note: the log is not changed.
@@ -177,15 +176,25 @@ class Graph():
         --------
         find_states
         reconstruct_log
+        redirect_edges
         """
         SC = self.find_states(log, pre_traverse, ordered)
-        log_agg = Log()
-        log_agg.flat_log = reconstruct_log(log, SC, ordered)
-        log_agg.activities = log.activities.union(set(SC))
-        log_agg.cases = log.cases
-        T = TransitionMatrix()
-        T.update(log_agg.flat_log)
-        self.update(log_agg, activity_rate, path_rate, T)
+        if (agg_type == 'outer') | (agg_type == 'combine'):
+            log_agg = Log()
+            log_agg.flat_log = reconstruct_log(log, SC, ordered)
+            log_agg.activities = log.activities.union(set(SC))
+            log_agg.cases = log.cases
+            T = TransitionMatrix()
+            T.update(log_agg.flat_log)
+            self.update(log_agg, activity_rate, path_rate, T)
+        if (agg_type == 'inner') | (agg_type == 'combine'):
+            if agg_type == 'combine':
+                SC = [sc for sc in SC if sc in self.nodes] # only work with existing meta-states
+            self.nodes, self.edges = redirect_edges(self.nodes,
+                                                    self.edges,
+                                                    meta_states=SC,
+                                                    agg_type=agg_type,
+                                                    heuristic=heuristic)
 
     def cycles_search(self, pre_traverse=False):
         """Perform DFS for cycles search in a graph (process model).
@@ -342,6 +351,7 @@ class Graph():
         ADS = ADS_matrix(log, T)
         
         case_cnt = len(log.cases)
+        eps = 10**(-len(str(case_cnt)))
 
         def loss(a_i, a_j):
             """Perform the loss function for log replay.
@@ -368,9 +378,9 @@ class Graph():
             for i in range(len(log.flat_log[trace])-1):
                 a_i = log.flat_log[trace][i]
                 a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) in self.edges:
-                    continue
-                else:
+                if (a_i,a_j) not in self.edges:
                     losses += loss(a_i, a_j)
             losses += loss(log.flat_log[trace][-1], 'end')
+        for edge in self.edges:
+            losses += loss(edge[0], edge[1])
         return losses

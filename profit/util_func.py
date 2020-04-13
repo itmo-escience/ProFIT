@@ -38,9 +38,9 @@ def dict_normalization(dict_, nested=False):
         if dict_.values():
             d_max = max(dict_.values())
             d_min = min(dict_.values())
-            if d_max - d_min == 0: 
+            if d_max - d_min == 0:
                 dict_norm = {key: 1 for key in dict_}
-            else: 
+            else:
                 dict_norm = {key: (dict_[key] - d_min) / (d_max - d_min) for key in dict_}
     else:
         for key_1 in dict_:
@@ -278,11 +278,12 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         else: make_connected(edges, start_descendant, 'desc')
 
 def reconstruct_log(log, meta_states, ordered=False):
-    """Rebuild (flat) log according to meta states found in the 
-    model. If ordered=True, the order of meta state activities 
-    is fixed strictly.
+    """Rebuild log according to meta states found in the model.
+    If ordered=True, the order of meta state activities is fixed
+    strictly.
     """
     meta_states.sort(key=len, reverse=True)
+    states_events = {v for state in meta_states for v in state}
     states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \
                                          for s in meta_states}
     log1 = dict()
@@ -292,21 +293,80 @@ def reconstruct_log(log, meta_states, ordered=False):
         aggregated = False
         i = 0
         while i < len(case_log):
-            for s in meta_states:
-                try: tmp = case_log[i:i+len(s)]
-                except: continue
-                if ordered:
-                    cond = (tmp == s)
-                else: cond = (tmp in states_seq[s])
-                if cond:
-                    case_log1.append(s)
-                    i += len(s) - 1
-                    aggregated = True
-                    break
-            if not aggregated:
-                case_log1.append(case_log[i])
+            if case_log[i] in states_events:
+                for s in meta_states:
+                    try: tmp = case_log[i:i+len(s)]
+                    except: continue
+                    if ordered:
+                        cond = (tmp == s)
+                    else: cond = (tmp in states_seq[s])
+                    if cond:
+                        case_log1.append(s)
+                        i += len(s) - 1
+                        aggregated = True
+                        break
+                if not aggregated:
+                    case_log1.append(case_log[i])
             i += 1
             aggregated = False
         log1[case] = tuple(case_log1)
     
     return log1
+
+def redirect_edges(nodes, edges, meta_states, agg_type='inner', heuristic='all'):
+    """Remove events that present in meta-states found in the model and redirecting 
+    their edges to corresponding meta-states. It can be performed by two heuristics: 
+    'all' and 'frequent'. The first heuristic redirects edges of an event to all meta-
+    states that include it, the last --- to most frequent one.
+    (Future plans: heuristic 'best')
+    """
+    def check_dict_key(d, key, set_val):
+        if key not in d:
+            d[key] = set_val
+    
+    event_states = dict()
+    for state in meta_states:
+        for event in state:
+            check_dict_key(event_states, event, set())
+            event_states[event].add(state)
+    
+    nodes1 = dict()
+    for a in nodes:
+        if a in event_states:
+            if agg_type == 'combine': continue
+            for state in event_states[a]:
+                check_dict_key(nodes1, state, dict())
+                nodes1[state][a] = nodes[a]
+        elif a in meta_states:
+            nodes1[a] = (nodes[a][0], dict())
+            for a_i in a:
+                abs_frq, cse_frq = nodes[a]
+                if a_i in nodes:
+                    abs_frq += nodes[a_i][0]
+                    cse_frq += nodes[a_i][1]
+                nodes1[a][1][a_i] = (abs_frq, cse_frq)
+        else: nodes1[a] = nodes[a]
+    
+    edges1 = dict()
+    def add_freq(key, t):
+        abs_frq = edges1[key][0] + edges[t][0]
+        edges1[key] = (abs_frq, -1)
+    for t in edges:
+        t0, t1 = t
+        if t0 not in event_states:
+            if t1 not in event_states:
+                edges1[t] = edges[t]
+            else:
+                for state in event_states[t1]:
+                    check_dict_key(edges1, (t0,state), (0,-1)) # can't count case frq
+                    add_freq((t0,state), t)
+        else:
+            for state in event_states[t0]:
+                if t1 not in event_states:
+                    check_dict_key(edges1, (state,t1), (0,-1)) # can't count case frq
+                    add_freq((state,t1), t)
+                else:
+                    for state1 in event_states[t1]:
+                        check_dict_key(edges1, (state,state1), (0,-1)) # can't count case frq
+                        add_freq((state,state1), t)
+    return nodes1, edges1

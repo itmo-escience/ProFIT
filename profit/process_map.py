@@ -77,13 +77,15 @@ class ProcessMap():
         self.Log = None
         self.Rates = {'activities': 100, 'paths': 0}
         self.Params = {'optimize': True,
-                       'aggregate': False,
                        'lambd': 0.5,
                        'step': 10,
+                       'verbose': False,
+                       'aggregate': False,
+                       'agg_type': 'outer',
+                       'heuristic': 'all',
                        'pre_traverse': False,
                        'ordered' : False,
-                       'colored': True,
-                       'verbose': False}
+                       'colored': True}
         self._Observers = {'T': None,
                            'Graph': None,
                            'Renderer': None}
@@ -185,6 +187,8 @@ class Updater(ProcessMap):
             G.aggregate(self.Log,
                         self.Rates['activities'],
                         self.Rates['paths'],
+                        self.Params['agg_type'],
+                        self.Params['heuristic'],
                         self.Params['pre_traverse'],
                         self.Params['ordered'])
         return G
