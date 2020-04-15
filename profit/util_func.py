@@ -305,8 +305,8 @@ def reconstruct_log(log, meta_states, ordered=False):
                         i += len(s) - 1
                         aggregated = True
                         break
-                if not aggregated:
-                    case_log1.append(case_log[i])
+            if not aggregated:
+                case_log1.append(case_log[i])
             i += 1
             aggregated = False
         log1[case] = tuple(case_log1)
