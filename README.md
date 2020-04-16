@@ -19,6 +19,7 @@ See the details of how to use it in [demo jupyter notebook](https://github.com/S
 **Required packages**:
 * `Pandas`
 * `Graphviz`
+
 (See [requirements](https://github.com/Siella/ProFIT/blob/master/meta/requirements.txt))
 
 ## Features
