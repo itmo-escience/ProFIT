@@ -19,7 +19,8 @@ See the details of how to use it in [demo jupyter notebook](https://github.com/S
 **Required packages**:
 * `Pandas`
 * `Graphviz`
-* `os`, `sys`
+
+(See [requirements](https://github.com/Siella/ProFIT/blob/master/meta/requirements.txt))
 
 ## Features
 Process model discovered by ProFIT is a state graph (see figure below) in the form of transition system like a finite state automation but with activities represented in nodes rather than in edges. The green node indicates the beginning of the process and shows the total number of cases presenting in the log, and the red node is related to the end of the process. The internal nodes and edges of the graph show the absolute frequencies of events and transitions, respectively: the more absolute value is, the darker or thicker element is. 
