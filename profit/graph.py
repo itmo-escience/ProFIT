@@ -382,6 +382,7 @@ class Graph():
                 loss = eps
             return loss
         
+        edges = self.edges
 #         edges = []
 #         for e in self.edges:
 #             if (type(e[0]) == tuple) & (type(e[1]) != tuple):
@@ -400,7 +401,7 @@ class Graph():
             for i in range(len(log.flat_log[trace])-1):
                 a_i = log.flat_log[trace][i]
                 a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) not in self.edges:
+                if (a_i,a_j) not in edges:
                     losses += loss(a_i, a_j)
             losses += loss(log.flat_log[trace][-1], 'end')
         for edge in edges:
