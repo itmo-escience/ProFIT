@@ -382,25 +382,25 @@ class Graph():
                 loss = eps
             return loss
         
-        edges = []
-        for e in self.edges:
-            if (type(e[0]) == tuple) & (type(e[1]) != tuple):
-                edges.extend([(e[0][i],e[1]) for i in range(len(e[0]))])
-            elif (type(e[1]) == tuple) & (type(e[0]) != tuple):
-                edges.extend([(e[0],e[1][i]) for i in range(len(e[1]))])
-            elif (type(e[0]) == tuple) & (type(e[1]) == tuple):
-                edges.extend([(e[0][i],e[1][j]) for i in range(len(e[0]) \
-                                                for j in range(len(e[1])))])
-            else:
-                edges.append(e)
-        edges = set(edges)
+#         edges = []
+#         for e in self.edges:
+#             if (type(e[0]) == tuple) & (type(e[1]) != tuple):
+#                 edges.extend([(e[0][i],e[1]) for i in range(len(e[0]))])
+#             elif (type(e[1]) == tuple) & (type(e[0]) != tuple):
+#                 edges.extend([(e[0],e[1][i]) for i in range(len(e[1]))])
+#             elif (type(e[0]) == tuple) & (type(e[1]) == tuple):
+#                 edges.extend([(e[0][i],e[1][j]) for i in range(len(e[0]) \
+#                                                 for j in range(len(e[1])))])
+#             else:
+#                 edges.append(e)
+#         edges = set(edges)
         losses = 0
         for trace in log.flat_log:
             losses += loss('start', log.flat_log[trace][0])
             for i in range(len(log.flat_log[trace])-1):
                 a_i = log.flat_log[trace][i]
                 a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) not in edges:
+                if (a_i,a_j) not in self.edges:
                     losses += loss(a_i, a_j)
             losses += loss(log.flat_log[trace][-1], 'end')
         for edge in edges:
