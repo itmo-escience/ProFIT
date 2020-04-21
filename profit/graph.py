@@ -1,6 +1,7 @@
 from log import Log
 from transition_matrix import TransitionMatrix
-from util_func import *
+from util_pm import *
+from util_agg import *
 import sys
 
 class Graph():
@@ -13,7 +14,7 @@ class Graph():
         self.nodes = None
         self.edges = None
 
-    def update(self, log, activity_rate, path_rate, T):
+    def update(self, log, activity_rate, path_rate, T, S_node=None):
         """Update nodes and edges attributes performing node
         and edge filtering according to activity and path rates,
         respectively.
@@ -28,8 +29,12 @@ class Graph():
         path_rate: float
             The inverse value to edge significance threshold: the
             more it is, the more transitions are observed in the model
-        T: TransitionMatrix
+        T: TransitionMatrix / dict
             A matrix describing the transitions of a Markov chain
+            (Note: dictionary is passed when aggregation is performed)
+        S_node: dict
+            Node significance. Used only for aggregation type 'inner'
+            (default None)
 
         See Also
         ---------
@@ -45,12 +50,12 @@ class Graph():
                (pp. 328-343). Springer, Berlin, Heidelberg.
         """
         # 1. Node filtering
-        S = node_significance(log)
+        S = S_node if S_node else node_significance(log)
         S_norm = dict_normalization(S, nested=False)
         activities = [a for a in S_norm if S_norm[a] >= (1-activity_rate/100)]
         
         # 2. Edge filtering
-        T = transit_matrix(log, T.T)
+        T = T if type(T)==dict else transit_matrix(log, T.T)
         
         # Early algorithm stop
         if (path_rate == 100):
@@ -88,7 +93,7 @@ class Graph():
             check_feasibility(activities, transitions, T, I, S_norm, S_out_norm)
         
         activitiesDict = {a: (sum([v[0] for v in T[a].values()]), \
-                          S[a] * len(log.cases)) for a in activities}
+                          int(S[a] * len(log.cases))) for a in activities}
         transitionsDict = dict()
         for t in transitions:
             try: transitionsDict[tuple(t)] = T[t[0]][t[1]]
@@ -179,22 +184,27 @@ class Graph():
         redirect_edges
         """
         SC = self.find_states(log, pre_traverse, ordered)
-        if (agg_type == 'outer') | (agg_type == 'combine'):
-            log_agg = Log()
-            log_agg.flat_log = reconstruct_log(log, SC, ordered)
-            log_agg.activities = log.activities.union(set(SC))
-            log_agg.cases = log.cases
-            T = TransitionMatrix()
-            T.update(log_agg.flat_log)
+        log_agg = Log()
+        log_agg.flat_log = reconstruct_log(log, SC, ordered)
+        log_agg.activities = log.activities.union(set(SC))
+        log_agg.cases = log.cases
+        T = TransitionMatrix()
+        T.update(log_agg.flat_log)
+        if agg_type not in ['outer', 'inner']:
+            raise ValueError('Invalid aggregation type')
+        if heuristic not in ['all', 'frequent']:
+            raise ValueError('Invalid heuristic')
+        if agg_type == 'inner':
+            self.update(log_agg, 100, 0, T)
+            nodes = self.nodes
+            S = node_significance_filtered(log_agg, T.T, nodes, SC, heuristic)
+            T_ = transit_matrix(log_agg, T.T)
+            T1 = T_filtered(log_agg, T_, nodes, SC, heuristic=heuristic)
+            log_agg.flat_log, log_agg.activities = filter_connections(log_agg, SC) 
+            self.update(log_agg, activity_rate, path_rate, T1, S)
+            self.nodes = add_frq(self.nodes, nodes, SC, T.T, heuristic)
+        else:
             self.update(log_agg, activity_rate, path_rate, T)
-        if (agg_type == 'inner') | (agg_type == 'combine'):
-            if agg_type == 'combine':
-                SC = [sc for sc in SC if sc in self.nodes] # only work with existing meta-states
-            self.nodes, self.edges = redirect_edges(self.nodes,
-                                                    self.edges,
-                                                    meta_states=SC,
-                                                    agg_type=agg_type,
-                                                    heuristic=heuristic)
 
     def cycles_search(self, pre_traverse=False):
         """Perform DFS for cycles search in a graph (process model).
@@ -371,16 +381,28 @@ class Graph():
             else:
                 loss = eps
             return loss
-
+        
+        edges = []
+        for e in self.edges:
+            if (type(e[0]) == tuple) & (type(e[1]) != tuple):
+                edges.extend([(e[0][i],e[1]) for i in range(len(e[0]))])
+            elif (type(e[1]) == tuple) & (type(e[0]) != tuple):
+                edges.extend([(e[0],e[1][i]) for i in range(len(e[1]))])
+            elif (type(e[0]) == tuple) & (type(e[1]) == tuple):
+                edges.extend([(e[0][i],e[1][j]) for i in range(len(e[0]) \
+                                                for j in range(len(e[1])))])
+            else:
+                edges.append(e)
+        edges = set(edges)
         losses = 0
         for trace in log.flat_log:
             losses += loss('start', log.flat_log[trace][0])
             for i in range(len(log.flat_log[trace])-1):
                 a_i = log.flat_log[trace][i]
                 a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) not in self.edges:
+                if (a_i,a_j) not in edges:
                     losses += loss(a_i, a_j)
             losses += loss(log.flat_log[trace][-1], 'end')
-        for edge in self.edges:
+        for edge in edges:
             losses += loss(edge[0], edge[1])
         return losses

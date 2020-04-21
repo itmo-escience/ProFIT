@@ -41,8 +41,8 @@ class Renderer():
         # 1. Node color and shape
         F = dict() # Activities absolute frequencies
         for a in nodes:
-            if type(nodes[a]) == dict:
-                vals = [v[0] for v in nodes[a].values()] 
+            if type(nodes[a][-1]) == dict:
+                vals = [v for v in nodes[a][-1].values()] 
                 F[a] = sum(vals) / len(vals)
             else: F[a] = nodes[a][0]
         case_cnt = sum([v[0] for v in T['start'].values()])
@@ -59,16 +59,13 @@ class Renderer():
             if color < 50:
                 font = 'white'
             if type(a) == tuple:
-                if type(nodes[a]) == dict:
-                    add_counts = [' ('+str(nodes[a][c][0])+')' for c in a]
-                elif type(nodes[a][1]) == dict:
-                    add_counts = [' ('+str(nodes[a][1][c][0])+')' for c in a]
+                if type(nodes[a][-1]) == dict:
+                    add_counts = [' ('+str(nodes[a][-1][c])+')' for c in a]
                 else: add_counts = [''] * len(a)
                 node_label = str(a[0]) + add_counts[0]
                 for i in range(1,len(a)):
                     node_label += '\n' + str(a[i]) + add_counts[i]
-                if (type(nodes[a]) != dict) | (type(nodes[a]) == tuple):
-                    node_label += '\n(' + str(nodes[a][0]) + ')'
+                node_label += '\n(' + str(nodes[a][0]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font, shape='octagon')
             else:
                 node_label = str(a) + ' (' + str(F[a]) + ')'
