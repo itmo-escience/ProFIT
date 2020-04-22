@@ -131,6 +131,7 @@ class Graph():
         transitions_cnt = len([1 for i in log.flat_log \
                                  for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
+        ADS = ADS_matrix(log, T.T)
 
         def Q(theta1, theta2, lambd):
             """Quality (cost) function (losses + regularization term).
@@ -140,7 +141,7 @@ class Graph():
             """
             self.update(log, theta1, theta2, T)
             n, m = len(self.nodes), len(self.edges)
-            losses = self.fitness(log, T.T)
+            losses = self.fitness(log, T.T, ADS)
             
             return (1/lambd)*losses/transitions_cnt + lambd * m/n
         
@@ -350,7 +351,7 @@ class Graph():
                 SC.append(c)
         return SC
 
-    def fitness(self, log, T=None):
+    def fitness(self, log, T=None, ADS=None):
         """Return the value of a cost function that includes
         only loss term.
         """
@@ -358,7 +359,8 @@ class Graph():
             TM = TransitionMatrix()
             TM.update(log)
             T = TM.T
-        ADS = ADS_matrix(log, T)
+        if ADS == None:
+            ADS = ADS_matrix(log, T)
         
         case_cnt = len(log.cases)
         eps = 10**(-len(str(case_cnt)))
@@ -381,19 +383,7 @@ class Graph():
             else:
                 loss = eps
             return loss
-        
-        edges = []
-        for e in self.edges:
-            if (type(e[0]) == tuple) & (type(e[1]) != tuple):
-                edges.extend([(e[0][i],e[1]) for i in range(len(e[0]))])
-            elif (type(e[1]) == tuple) & (type(e[0]) != tuple):
-                edges.extend([(e[0],e[1][i]) for i in range(len(e[1]))])
-            elif (type(e[0]) == tuple) & (type(e[1]) == tuple):
-                edges.extend([(e[0][i],e[1][j]) for i in range(len(e[0]) \
-                                                for j in range(len(e[1])))])
-            else:
-                edges.append(e)
-        edges = set(edges)
+        edges = self.edges
         losses = 0
         for trace in log.flat_log:
             losses += loss('start', log.flat_log[trace][0])
