@@ -1,4 +1,6 @@
-class TransitionMatrix():
+from observer_abc import Observer
+
+class TransitionMatrix(Observer):
     """Class to represent a transition matrix that 
     describes the transitions of a Markov chain.
     """

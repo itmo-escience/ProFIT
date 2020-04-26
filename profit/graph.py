@@ -1,10 +1,11 @@
 from log import Log
 from transition_matrix import TransitionMatrix
+from observer_abc import Observer
 from util_pm import *
 from util_agg import *
 import sys
 
-class Graph():
+class Graph(Observer):
     """Class to represent process model as a graph structure."""
 
     def __init__(self):

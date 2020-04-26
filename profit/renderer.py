@@ -3,11 +3,11 @@ color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
              range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
              range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
              range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
-
+from observer_abc import Observer
 import graphviz as gv
 import os
 
-class Renderer():
+class Renderer(Observer):
     """Class to represent the visualization of a process model."""
 
     def __init__(self):
