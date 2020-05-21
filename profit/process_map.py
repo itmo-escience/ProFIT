@@ -73,6 +73,8 @@ class ProcessMap():
                 and white (default True)
             verbose: bool
                 If True, show optimization progress bar (default False)
+            render_format: string
+                Graphviz output format.
         """
         self.Log = None
         self.Rates = {'activities': 100, 'paths': 0}
@@ -83,7 +85,8 @@ class ProcessMap():
                        'pre_traverse': False,
                        'ordered' : False,
                        'colored': True,
-                       'verbose': False}
+                       'verbose': False,
+                       'render_format': 'png'}
         self._Observers = {'T': None,
                            'Graph': None,
                            'Renderer': None}
@@ -196,7 +199,8 @@ class Updater(ProcessMap):
         R = Renderer()
         R.update(self._Observers['T'],
                  self._Observers['Graph'],
-                 self.Params['colored'])
+                 self.Params['colored'],
+                 self.Params['render_format'])
         return R
 
     def update(self):
