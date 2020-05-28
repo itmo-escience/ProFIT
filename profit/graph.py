@@ -133,8 +133,6 @@ class Graph(Observer):
                                  for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
         ADS = ADS_matrix(log, T.T)
-        N = len(log.activities)
-        M = len([1 for a in T.T for b in T.T[a] if (a != 'start') & (b != 'end')])
 
         def Q(theta1, theta2, lambd):
             """Quality (cost) function (losses + regularization term).
