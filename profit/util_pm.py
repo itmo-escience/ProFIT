@@ -38,9 +38,9 @@ def dict_normalization(dict_, nested=False):
         if dict_.values():
             d_max = max(dict_.values())
             d_min = min(dict_.values())
-            if d_max - d_min == 0: 
+            if d_max - d_min == 0:
                 dict_norm = {key: 1 for key in dict_}
-            else: 
+            else:
                 dict_norm = {key: (dict_[key] - d_min) / (d_max - d_min) for key in dict_}
     else:
         for key_1 in dict_:
@@ -276,37 +276,3 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         isDescendant('start')
         if all(start_descendant.values()): break
         else: make_connected(edges, start_descendant, 'desc')
-
-def reconstruct_log(log, meta_states, ordered=False):
-    """Rebuild (flat) log according to meta states found in the 
-    model. If ordered=True, the order of meta state activities 
-    is fixed strictly.
-    """
-    meta_states.sort(key=len, reverse=True)
-    states_seq = {s: [s[i:len(s)]+s[0:i] for i in range(len(s))] \
-                                         for s in meta_states}
-    log1 = dict()
-    for case in log.flat_log:
-        case_log = log.flat_log[case]
-        case_log1 = []
-        aggregated = False
-        i = 0
-        while i < len(case_log):
-            for s in meta_states:
-                try: tmp = case_log[i:i+len(s)]
-                except: continue
-                if ordered:
-                    cond = (tmp == s)
-                else: cond = (tmp in states_seq[s])
-                if cond:
-                    case_log1.append(s)
-                    i += len(s) - 1
-                    aggregated = True
-                    break
-            if not aggregated:
-                case_log1.append(case_log[i])
-            i += 1
-            aggregated = False
-        log1[case] = tuple(case_log1)
-    
-    return log1
