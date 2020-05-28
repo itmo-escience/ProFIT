@@ -3,11 +3,11 @@ color_map = {range(0,10) : "#1d2559", range(10,20) : "#203078",
              range(40,50) : "#5661c6", range(50,60) : "#7d7fd2",
              range(60,70) : "#a09dde", range(70,80) : "#c0bde9",
              range(80,90) : "#e0ddf4", range(90,101) : "#ffffff"}
-
+from observer_abc import Observer
 import graphviz as gv
 import os
 
-class Renderer():
+class Renderer(Observer):
     """Class to represent the visualization of a process model."""
 
     def __init__(self):
@@ -39,7 +39,12 @@ class Renderer():
         G.attr('node', shape='box', style='filled', fontname='Sans Not-Rotated 14')
         
         # 1. Node color and shape
-        F = {a: nodes[a][0] for a in nodes} # Activities absolute frequencies
+        F = dict() # Activities absolute frequencies
+        for a in nodes:
+            if type(nodes[a][-1]) == dict:
+                vals = [v for v in nodes[a][-1].values()] 
+                F[a] = sum(vals) / len(vals)
+            else: F[a] = nodes[a][0]
         case_cnt = sum([v[0] for v in T['start'].values()])
         x_max, x_min = max(F.values()), min(F.values())
         for a in nodes:
@@ -54,13 +59,16 @@ class Renderer():
             if color < 50:
                 font = 'white'
             if type(a) == tuple:
-                node_label = str(a[0])
+                if type(nodes[a][-1]) == dict:
+                    add_counts = [' ('+str(nodes[a][-1][c])+')' for c in a]
+                else: add_counts = [''] * len(a)
+                node_label = str(a[0]) + add_counts[0]
                 for i in range(1,len(a)):
-                    node_label += '\n' + str(a[i])
+                    node_label += '\n' + str(a[i]) + add_counts[i]
                 node_label += '\n(' + str(nodes[a][0]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font, shape='octagon')
             else:
-                node_label = a + ' (' + str(F[a]) + ')'
+                node_label = str(a) + ' (' + str(F[a]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font)
         G.node("start", shape="circle", label=str(case_cnt), \
                 fillcolor="#95d600" if colored else "#ffffff", margin='0.05')

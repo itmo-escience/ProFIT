@@ -76,26 +76,26 @@ class ProcessMap():
             render_format: string
                 Graphviz output format.
         """
-        self.Log = None
+        self.Log = Log()
         self.Rates = {'activities': 100, 'paths': 0}
         self.Params = {'optimize': True,
-                       'aggregate': False,
                        'lambd': 0.5,
                        'step': 10,
+                       'verbose': False,
+                       'aggregate': False,
+                       'agg_type': 'outer',
+                       'heuristic': 'all',
                        'pre_traverse': False,
                        'ordered' : False,
                        'colored': True,
-                       'verbose': False,
                        'render_format': 'png'}
-        self._Observers = {'T': None,
-                           'Graph': None,
-                           'Renderer': None}
+        self._Observers = {'T': TransitionMatrix(),
+                           'Graph': Graph(),
+                           'Renderer': Renderer()}
 
-    def set_log(self, FILE_PATH, cols=(0,1), *args, **kwargs):
+    def set_log(self, data=None, FILE_PATH='', cols=(0,1), *args, **kwargs):
         """Set Log attribute of the class."""
-        log = Log()
-        log.update(FILE_PATH, cols=cols, *args, **kwargs)
-        self.Log = log
+        self.Log.update(data, FILE_PATH, cols=cols, *args, **kwargs)
 
     def set_rates(self, activity_rate, path_rate):
         """Set Rates attribute of the class."""
@@ -120,14 +120,31 @@ class ProcessMap():
 
     def update(self):
         """Update "observers" and rates if settings were changed."""
-        UPD = Updater()
-        UPD.Log = self.Log
-        UPD.Rates = self.Rates
-        UPD.Params = self.Params
-        UPD.update()
-        if UPD.Params['optimize']:
-            self.Rates = UPD.Rates
-        self._Observers = UPD._Observers
+        self._Observers['T'].update(self.Log.flat_log)
+
+        if self.Params['optimize']:
+            self.Rates = self._Observers['Graph'].optimize(self.Log,
+                                                           self._Observers['T'],
+                                                           self.Params['lambd'],
+                                                           self.Params['step'],
+                                                           self.Params['verbose'])
+        else:
+            self._Observers['Graph'].update(self.Log,
+                                            self.Rates['activities'],
+                                            self.Rates['paths'],
+                                            self._Observers['T'])
+        if self.Params['aggregate']:
+            self._Observers['Graph'].aggregate(self.Log,
+                                               self.Rates['activities'],
+                                               self.Rates['paths'],
+                                               self.Params['agg_type'],
+                                               self.Params['heuristic'],
+                                               self.Params['pre_traverse'],
+                                               self.Params['ordered'])
+
+        self._Observers['Renderer'].update(self._Observers['T'],
+                                           self._Observers['Graph'],
+                                           self.Params['colored'])
 
     def get_log(self):
         """Return flat log (see Log)."""
@@ -155,58 +172,4 @@ class ProcessMap():
         if save_path:
             self._Observers['Renderer'].save(save_path)
         return self._Observers['Renderer'].GV
-
-
-class Updater(ProcessMap):
-    """Class that extends ProcessMap and represents its attributes updates."""
-
-    def get_T(self):
-        """Override superclass method to create a TransitionMatrix object 
-        using log data from Log attribute.
-        """
-        T = TransitionMatrix()
-        T.update(self.Log.flat_log)
-        return T
-
-    def get_graph(self):
-        """Override superclass method to create a Graph object using log
-        data, pre-set rates and parameters.
-        """
-        G = Graph()
-        if self.Params['optimize']:
-            self.Rates = G.optimize(self.Log,
-                                    self._Observers['T'],
-                                    self.Params['lambd'],
-                                    self.Params['step'],
-                                    self.Params['verbose'])
-        else:
-            G.update(self.Log,
-                     self.Rates['activities'],
-                     self.Rates['paths'],
-                     self._Observers['T'])
-        if self.Params['aggregate']:
-            G.aggregate(self.Log,
-                        self.Rates['activities'],
-                        self.Rates['paths'],
-                        self.Params['pre_traverse'],
-                        self.Params['ordered'])
-        return G
-
-    def render_map(self):
-        """Override superclass method to create a Renderer object
-        to visualize a process model.
-        """
-        R = Renderer()
-        R.update(self._Observers['T'],
-                 self._Observers['Graph'],
-                 self.Params['colored'],
-                 self.Params['render_format'])
-        return R
-
-    def update(self):
-        """Override superclass method to update "observers":
-        transition matrix, graph and renderer objects.
-        """
-        self._Observers['T'] = self.get_T()
-        self._Observers['Graph'] = self.get_graph()
-        self._Observers['Renderer'] = self.render_map()
+        
