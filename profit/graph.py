@@ -133,6 +133,8 @@ class Graph(Observer):
                                  for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
         ADS = ADS_matrix(log, T.T)
+        N = len(log.activities)
+        M = len([1 for a in T.T for b in T.T[a] if (a != 'start') & (b != 'end')])
 
         def Q(theta1, theta2, lambd):
             """Quality (cost) function (losses + regularization term).
@@ -141,7 +143,7 @@ class Graph(Observer):
             directed graph.
             """
             self.update(log, theta1, theta2, T)
-            n, m = len(self.nodes), len(self.edges)
+            n, m = len(self.nodes)+2, len(self.edges)
             losses = self.fitness(log, T.T, ADS)
             
             return (1/lambd)*losses/transitions_cnt + lambd * m/n

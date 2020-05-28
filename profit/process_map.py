@@ -90,9 +90,9 @@ class ProcessMap():
                            'Graph': Graph(),
                            'Renderer': Renderer()}
 
-    def set_log(self, FILE_PATH, cols=(0,1), *args, **kwargs):
+    def set_log(self, data=None, FILE_PATH='', cols=(0,1), *args, **kwargs):
         """Set Log attribute of the class."""
-        self.Log.update(FILE_PATH, cols=cols, *args, **kwargs)
+        self.Log.update(data, FILE_PATH, cols=cols, *args, **kwargs)
 
     def set_rates(self, activity_rate, path_rate):
         """Set Rates attribute of the class."""
