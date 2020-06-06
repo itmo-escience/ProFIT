@@ -1,5 +1,4 @@
-# ProFIT: Process Flow Investigation Tool
-> Process mining module for Python.
+<img src="/meta/logo.png" width="375" height="86,75">
 
 ## Table of contents
 * [General info](#general-info)
@@ -9,10 +8,12 @@
 * [References](#references)
 
 ## General info
+> Process mining module for Python.
+
 *Process mining* is an emerging discipline that have been developing for less than twenty years. Despite that fact, process mining is a promising approach to get insights into the real execution of processes in different organizations. Process mining is aimed to extract knowledge from routinely recorded data, *event logs*, that include information about completeness status of process steps with associated data, such as activities, resources, start/end timestamps, etc. There is a plenty of commercial and open-source software for process mining, but how to use the knowledge such tools extract from a log? In most cases one can perform an assessment of a process model only visualy. However, it would be desirable to extract knowledge *from* discovered process as well as from the event log. It could be data or formal structure describing the process one might use, e.g., in modelling. This is the main motivation for the ProFIT development that provides such an opportunity.
 
 ## Setup
-You can clone this repository with the `git clone` command on a local machine and add a directory with the package to PATH. To start work with ProFIT, you should import `ProcessMap` from the `profit` module. 
+You can clone this repository with the `git clone` command on a local machine and add a directory with the package to PATH. To start work with ProFIT, you should import `ProcessMap` from the `profit` module.
 
 See the details of how to use it in [demo jupyter notebook](https://github.com/Siella/ProFIT/blob/master/demo/profit_examples.ipynb).
 
@@ -23,7 +24,7 @@ See the details of how to use it in [demo jupyter notebook](https://github.com/S
 (See [requirements](https://github.com/Siella/ProFIT/blob/master/meta/requirements.txt))
 
 ## Features
-Process model discovered by ProFIT is a state graph (see figure below) in the form of transition system like a finite state automation but with activities represented in nodes rather than in edges. The green node indicates the beginning of the process and shows the total number of cases presenting in the log, and the red node is related to the end of the process. The internal nodes and edges of the graph show the absolute frequencies of events and transitions, respectively: the more absolute value is, the darker or thicker element is. 
+Process model discovered by ProFIT is a state graph (see figure below) in the form of transition system like a finite state automation but with activities represented in nodes rather than in edges. The green node indicates the beginning of the process and shows the total number of cases presenting in the log, and the red node is related to the end of the process. The internal nodes and edges of the graph show the absolute frequencies of events and transitions, respectively: the more absolute value is, the darker or thicker element is.
 ![Process model example](/meta/process.png)
 
 The proposed miner technique includes the basics of state-of-the-art *Fuzzy Miner*. However, the properties of Fuzzy nets (models produced by Fuzzy Miner) do not guarantee a reachable or even connected graph that is desired to see the complete behaviors of process traces. So, we perform depth-first search (DFS) on the state graph two times to check whether each node of the graph is a descendant of the initial state (“start”) and a parent of the terminal state (“end”) of the process. This way, the model adjusted represents an executable process.
@@ -43,7 +44,9 @@ We also introduced an approach for process model simplification. Simplification 
 - [ ] Use results in predictive modeling.
 
 ## Status
-Project is an ongoing research work.
+This project is an ongoing research work, but you can try it already!
+
+<img src="/meta/cat_logo.jpg" width="600" height="450">
 
 ## References
 1. Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
