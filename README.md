@@ -9,6 +9,7 @@
 
 ## General info
 > Process mining module for Python.
+
 *Process mining* is an emerging discipline that have been developing for less than twenty years. Despite that fact, process mining is a promising approach to get insights into the real execution of processes in different organizations. Process mining is aimed to extract knowledge from routinely recorded data, *event logs*, that include information about completeness status of process steps with associated data, such as activities, resources, start/end timestamps, etc. There is a plenty of commercial and open-source software for process mining, but how to use the knowledge such tools extract from a log? In most cases one can perform an assessment of a process model only visualy. However, it would be desirable to extract knowledge *from* discovered process as well as from the event log. It could be data or formal structure describing the process one might use, e.g., in modelling. This is the main motivation for the ProFIT development that provides such an opportunity.
 
 ## Setup
@@ -45,7 +46,7 @@ We also introduced an approach for process model simplification. Simplification 
 ## Status
 This project is an ongoing research work, but you can try it already!
 
-<img src="/meta/cat_logo.jpg" width="400" height="300">
+<img src="/meta/cat_logo.jpg" width="600" height="450">
 
 ## References
 1. Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
