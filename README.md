@@ -1,4 +1,4 @@
-<img src="/meta/logo.png" width="750" height="173,5">
+<img src="/meta/logo.png" width="375" height="86,75">
 > Process mining module for Python.
 
 ## Table of contents
@@ -44,7 +44,7 @@ We also introduced an approach for process model simplification. Simplification 
 
 ## Status
 This project is an ongoing research work, but you can try it already!
-<img src="/meta/cat_logo.jpg" width="800" height="600">
+<img src="/meta/cat_logo.jpg" width="400" height="300">
 
 ## References
 1. Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
