@@ -1,4 +1,4 @@
-![ProFIT logo](/meta/logo.png){:height="50%" width="50%"}
+![ProFIT logo](/meta/logo.png width="100" height="100")
 > Process mining module for Python.
 
 ## Table of contents
