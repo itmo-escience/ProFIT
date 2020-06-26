@@ -4,6 +4,7 @@ from observer_abc import Observer
 from util_pm import *
 from util_agg import *
 import sys
+import math
 
 class Graph(Observer):
     """Class to represent process model as a graph structure."""
@@ -133,6 +134,8 @@ class Graph(Observer):
                                  for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
         ADS = ADS_matrix(log, T.T)
+        N = len(log.activities)
+        M = len([1 for a in T.T for b in T.T[a] if (a != 'start') & (b != 'end')])
 
         def Q(theta1, theta2, lambd):
             """Quality (cost) function (losses + regularization term).
@@ -143,8 +146,23 @@ class Graph(Observer):
             self.update(log, theta1, theta2, T)
             n, m = len(self.nodes)+2, len(self.edges)
             losses = self.fitness(log, T.T, ADS)
+            # print(losses)
+            # Calculate average degree
+            compl = m/n
+            # # # Calculate entropy
+            # x_0 = m/(n*n)
+            # x_1 = 1 - x_0
+            # compl = -x_0 * math.log(x_0, 2) - x_1 * math.log(x_1, 2)
+            # # Calculate elements ratio
+            # edges = [e for e in self.edges if (e[0] != 'start') & (e[1] != 'end')]
+            # nodes = {v for e in edges for v in e}
+            # compl = 0.5 * (len(nodes)/N + len(edges)/M)
+            # # # Calculate complete graph ratio
+            # edges = [e for e in self.edges if (e[0] != e[1])]
+            # nodes = {v for e in edges for v in e}
+            # compl = len(edges)/(len(nodes)*(len(nodes)-1))
             
-            return (1/lambd)*losses/transitions_cnt + lambd * m/n
+            return (losses,compl)
         
         Q_val = dict() 
         per_done = 0
@@ -163,11 +181,10 @@ class Graph(Observer):
                 sys.stdout.write("\rOptimization ..... {0:.2f}%".\
                                                 format(per_done))
                 sys.stdout.flush()
-            if (p != 100) & (type(grid) == range): 
-                Q_val[(a,100)] = Q(a, 100, lambd)
-        if (a != 100) & (type(grid) == range): 
-            Q_val[(100,100)] = Q(100, 100, lambd)
-        print()
+        max_loss = Q(0, 0, lambd)[0]
+        max_compl = Q(100, 100, lambd)[1]
+        for theta in Q_val:
+            Q_val[theta] = (1 - lambd) * Q_val[theta][0] / max_loss + lambd * Q_val[theta][1] / max_compl
         Q_opt = min(Q_val, key=lambda theta: Q_val[theta])
         self.update(log, Q_opt[0], Q_opt[1], T)
 
@@ -385,15 +402,38 @@ class Graph(Observer):
                 loss = eps
             return loss
         edges = self.edges
+        edges1 = []
+        for e in edges:
+            if (type(e[0]) == tuple) & (type(e[1]) == tuple):
+                for e_i in e[0]:
+                    for e_j in e[1]:
+                        edges1.append((e_i,e_j))
+                edges1 += [(e[0][i],e[0][i+1]) for i in range(len(e[0])-1)]
+                edges1 += [(e[1][i],e[1][i+1]) for i in range(len(e[1])-1)]
+                edges1 += [(e[0][-1],e[0][0]), (e[1][-1],e[1][0])]
+            elif (type(e[0]) == tuple):
+                for e_i in e[0]:
+                    edges1.append((e_i,e[1]))
+                edges1 += [(e[0][i],e[0][i+1]) for i in range(len(e[0])-1)]
+                edges1 += [(e[0][-1],e[0][0])]
+            elif (type(e[1]) == tuple):
+                for e_j in e[1]:
+                    edges1.append((e[0],e_j))
+                edges1 += [(e[1][i],e[1][i+1]) for i in range(len(e[1])-1)]
+                edges1 += [(e[1][-1],e[1][0])]
+            else:
+                edges1.append(e)
+        edges1 = set(edges1)
+
         losses = 0
         for trace in log.flat_log:
             losses += loss('start', log.flat_log[trace][0])
             for i in range(len(log.flat_log[trace])-1):
                 a_i = log.flat_log[trace][i]
                 a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) not in edges:
+                if (a_i,a_j) not in edges1:
                     losses += loss(a_i, a_j)
             losses += loss(log.flat_log[trace][-1], 'end')
-        for edge in edges:
+        for edge in edges1:
             losses += loss(edge[0], edge[1])
         return losses
