@@ -73,6 +73,8 @@ class ProcessMap():
                 and white (default True)
             verbose: bool
                 If True, show optimization progress bar (default False)
+            render_format: string
+                Graphviz output format.
         """
         self.Log = Log()
         self.Rates = {'activities': 100, 'paths': 0}
@@ -85,7 +87,8 @@ class ProcessMap():
                        'heuristic': 'all',
                        'pre_traverse': False,
                        'ordered' : False,
-                       'colored': True}
+                       'colored': True,
+                       'render_format': 'png'}
         self._Observers = {'T': TransitionMatrix(),
                            'Graph': Graph(),
                            'Renderer': Renderer()}

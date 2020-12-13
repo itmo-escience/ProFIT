@@ -15,7 +15,7 @@ class Renderer(Observer):
         object that can be rendered with the Graphviz installation."""
         self.GV = None
 
-    def update(self, TM, G, colored=True):
+    def update(self, TM, G, colored=True, render_format='png'):
         """Update graph object (GV attribute) and its representation: elements 
         count, node color, edge thickness, etc.
 
@@ -34,7 +34,7 @@ class Renderer(Observer):
         .. [1] Ferreira, D. R. (2017). A primer on process mining. Springer, Cham.
         """
         T, nodes, edges = TM.T, G.nodes, G.edges
-        G = gv.Digraph(strict=False, format='png')
+        G = gv.Digraph(strict=False, format=render_format)
         G.attr('edge', fontname='Sans Not-Rotated 14')
         G.attr('node', shape='box', style='filled', fontname='Sans Not-Rotated 14')
         
@@ -94,14 +94,16 @@ class Renderer(Observer):
         """Return graph in DOT language."""
         return self.GV
 
-    def save(self, save_path=None):
+    def save(self, save_path=None, gv_format_save=False):
         """Render and save graph in PNG (GV) format in the working directory,
         if no path to specific directory was indicated in save_path.
         """
-        gv_format_save = input("Save in GV format? (y/n): ").lower() == 'y'
-        save_name = input("Enter file name: ")
+        
         if save_path == None:
             save_path = os.path.dirname(os.path.abspath(__file__))
-        self.GV.render(save_path + save_name, view=False)
+        if os.path.isdir(save_path):
+        	save_name = input("Enter file name: ")
+        	save_path = save_path + save_name        
+        self.GV.render(save_path, view=False)
         if not gv_format_save:
-            os.remove(save_path + save_name)
+            os.remove(save_path)
