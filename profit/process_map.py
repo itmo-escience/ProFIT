@@ -3,7 +3,7 @@ from transition_matrix import TransitionMatrix
 from graph import Graph
 from renderer import Renderer
 
-class ProcessMap():
+class ProcessMap:
     """Class to perform a process model from event log.
 
         Attributes
@@ -85,12 +85,13 @@ class ProcessMap():
                        'heuristic': 'all',
                        'pre_traverse': False,
                        'ordered' : False,
+                       'cycle_rel': 0.5,
                        'colored': True}
         self._Observers = {'T': TransitionMatrix(),
                            'Graph': Graph(),
                            'Renderer': Renderer()}
 
-    def set_log(self, data=None, FILE_PATH='', cols=(0,1), *args, **kwargs):
+    def set_log(self, data=None, FILE_PATH='', cols=(0, 1), *args, **kwargs):
         """Set Log attribute of the class."""
         self.Log.update(data, FILE_PATH, cols=cols, *args, **kwargs)
 
@@ -105,12 +106,12 @@ class ProcessMap():
 
     def set_params(self, **kwargs):
         """Set Params attribute of the class."""
+
         def change_param(p):
             try: 
                 self.Params[p] = kwargs[p]
             except:
-                print(str(IOError) + \
-                ': No such parameter \'{}\'.'.format(p))
+                print(str(IOError) + ': No such parameter \'{}\'.'.format(p))
         
         for p in kwargs:
             change_param(p)
@@ -137,7 +138,8 @@ class ProcessMap():
                                                self.Params['agg_type'],
                                                self.Params['heuristic'],
                                                self.Params['pre_traverse'],
-                                               self.Params['ordered'])
+                                               self.Params['ordered'],
+                                               self.Params['cycle_rel'])
 
         self._Observers['Renderer'].update(self._Observers['T'],
                                            self._Observers['Graph'],

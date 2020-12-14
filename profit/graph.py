@@ -54,23 +54,23 @@ class Graph(Observer):
         # 1. Node filtering
         S = S_node if S_node else node_significance(log)
         S_norm = dict_normalization(S, nested=False)
-        activities = [a for a in S_norm if S_norm[a] >= (1-activity_rate/100)]
+        activities = [a for a in S_norm if S_norm[a] >= (1 - activity_rate / 100)]
         
         # 2. Edge filtering
-        T = T if type(T)==dict else transit_matrix(log, T.T)
+        T = T if type(T) == dict else transit_matrix(log, T.T)
         
         # Early algorithm stop
-        if (path_rate == 100):
+        if path_rate == 100:
             transitions = [(a_i, a_j) for a_i in T for a_j in T[a_i] \
                            if (a_i in activities + ['start', 'end']) \
                            & (a_j in activities + ['start', 'end'])]
         else:
             # Significance matrix of outcoming edges
-            S_out = edge_sig(T, source=activities+['start'], \
-                                target=activities+['end'], type_='out')
+            S_out = edge_sig(T, source=activities + ['start'],
+                                target=activities + ['end'], type_='out')
             # Significance matrix of incoming edges (inverse outcoming)
-            S_in = edge_sig(T, source=activities+['end'], \
-                               target=activities+['start'], type_='in')
+            S_in = edge_sig(T, source=activities + ['end'],
+                               target=activities + ['start'], type_='in')
             # Self-loops case significance
             S_loop = {a_i: T[a_i][a_j][1] / len(log.cases) for a_i in T \
                       for a_j in T[a_i] if (a_i == a_j) & (a_i in activities)}
@@ -88,18 +88,18 @@ class Graph(Observer):
             transitions = edge_filtering(S_out_norm, transitions, co=co, type_='out')
             for a_i in S_loop_norm:
                 if (S_loop_norm[a_i] - 0.01 >= co) | (co == 0):
-                    transitions.append((a_i,a_i))
+                    transitions.append((a_i, a_i))
             
             # 3. Check graph connectivity
-            I = incidence_matrix(transitions) # Filtered incidence matrix
+            I = incidence_matrix(transitions)  # Filtered incidence matrix
             check_feasibility(activities, transitions, T, I, S_norm, S_out_norm)
         
-        activitiesDict = {a: (sum([v[0] for v in T[a].values()]), \
-                          int(S[a] * len(log.cases))) for a in activities}
+        activitiesDict = {a: (sum([v[0] for v in T[a].values()]),
+                              int(S[a] * len(log.cases))) for a in activities}
         transitionsDict = dict()
         for t in transitions:
             try: transitionsDict[tuple(t)] = T[t[0]][t[1]]
-            except: transitionsDict[tuple(t)] = (0,0) # "imaginary" edges
+            except: transitionsDict[tuple(t)] = (0, 0)  # "imaginary" edges
         
         self.nodes = activitiesDict
         self.edges = transitionsDict
@@ -130,7 +130,7 @@ class Graph(Observer):
         Log
         TransitionMatrix
         """
-        transitions_cnt = len([1 for i in log.flat_log \
+        transitions_cnt = len([1 for i in log.flat_log
                                  for j in log.flat_log[i]]) \
                           + len(log.flat_log.keys())
         ADS = ADS_matrix(log, T.T)
@@ -148,7 +148,7 @@ class Graph(Observer):
             losses = self.fitness(log, T.T, ADS)
             # print(losses)
             # Calculate average degree
-            compl = m/n
+            compl = m / n
             # # # Calculate entropy
             # x_0 = m/(n*n)
             # x_1 = 1 - x_0
@@ -162,13 +162,13 @@ class Graph(Observer):
             # nodes = {v for e in edges for v in e}
             # compl = len(edges)/(len(nodes)*(len(nodes)-1))
             
-            return (losses,compl)
+            return losses, compl
         
         Q_val = dict() 
         per_done = 0
         if type(step) in [int, float]:
-            per_step = 100 / (100//step + 1)**2
-            grid = range(0,101,step)
+            per_step = 100 / (100 // step + 1) ** 2
+            grid = range(0, 101, step)
         else: 
             per_step = 100 / len(step)
             grid = step
@@ -184,7 +184,8 @@ class Graph(Observer):
         max_loss = Q(0, 0, lambd)[0]
         max_compl = Q(100, 100, lambd)[1]
         for theta in Q_val:
-            Q_val[theta] = (1 - lambd) * Q_val[theta][0] / max_loss + lambd * Q_val[theta][1] / max_compl
+            Q_val[theta] = (1 - lambd) * Q_val[theta][0] / max_loss + \
+                           lambd * Q_val[theta][1] / max_compl
         Q_opt = min(Q_val, key=lambda theta: Q_val[theta])
         self.update(log, Q_opt[0], Q_opt[1], T)
 
@@ -225,7 +226,7 @@ class Graph(Observer):
             self.update(log_agg, activity_rate, path_rate, T)
 
     def find_nodes_order(self):
-        """ Perform traverse of a process model from start node.
+        """Perform traverse of a process model from start node.
         Return list of nodes ordered by their closeness to start.
         """
         G = incidence_matrix(self.edges)
@@ -353,15 +354,15 @@ class Graph(Observer):
         """Return the value of a cost function that includes
         only loss term.
         """
-        if T == None:
+        if T is None:
             TM = TransitionMatrix()
             TM.update(log)
             T = TM.T
-        if ADS == None:
+        if ADS is None:
             ADS = ADS_matrix(log, T)
         
         case_cnt = len(log.cases)
-        eps = 10**(-len(str(case_cnt)))
+        eps = 10 ** (-len(str(case_cnt)))
 
         def loss(a_i, a_j):
             """Perform the loss function for log replay.
@@ -381,6 +382,7 @@ class Graph(Observer):
             else:
                 loss = eps
             return loss
+
         edges = self.edges
         edges1 = []
         for e in edges:
@@ -388,32 +390,30 @@ class Graph(Observer):
                 for e_i in e[0]:
                     for e_j in e[1]:
                         edges1.append((e_i,e_j))
-                edges1 += [(e[0][i],e[0][i+1]) for i in range(len(e[0])-1)]
-                edges1 += [(e[1][i],e[1][i+1]) for i in range(len(e[1])-1)]
-                edges1 += [(e[0][-1],e[0][0]), (e[1][-1],e[1][0])]
-            elif (type(e[0]) == tuple):
+                edges1 += [(e[0][i], e[0][i+1]) for i in range(len(e[0]) - 1)]
+                edges1 += [(e[1][i], e[1][i+1]) for i in range(len(e[1]) - 1)]
+                edges1 += [(e[0][-1], e[0][0]), (e[1][-1], e[1][0])]
+            elif type(e[0]) == tuple:
                 for e_i in e[0]:
                     edges1.append((e_i,e[1]))
-                edges1 += [(e[0][i],e[0][i+1]) for i in range(len(e[0])-1)]
-                edges1 += [(e[0][-1],e[0][0])]
-            elif (type(e[1]) == tuple):
+                edges1 += [(e[0][i], e[0][i+1]) for i in range(len(e[0]) - 1)]
+                edges1 += [(e[0][-1], e[0][0])]
+            elif type(e[1]) == tuple:
                 for e_j in e[1]:
-                    edges1.append((e[0],e_j))
-                edges1 += [(e[1][i],e[1][i+1]) for i in range(len(e[1])-1)]
-                edges1 += [(e[1][-1],e[1][0])]
+                    edges1.append((e[0], e_j))
+                edges1 += [(e[1][i], e[1][i+1]) for i in range(len(e[1]) - 1)]
+                edges1 += [(e[1][-1], e[1][0])]
             else:
                 edges1.append(e)
         edges1 = set(edges1)
 
         losses = 0
-        for trace in log.flat_log:
-            losses += loss('start', log.flat_log[trace][0])
-            for i in range(len(log.flat_log[trace])-1):
-                a_i = log.flat_log[trace][i]
-                a_j = log.flat_log[trace][i+1]
-                if (a_i,a_j) not in edges1:
+        for log_trace in log.flat_log.values():
+            losses += loss('start', log_trace[0])
+            for a_i, a_j in zip(log_trace, log_trace[1:]):
+                if (a_i, a_j) not in edges1:
                     losses += loss(a_i, a_j)
-            losses += loss(log.flat_log[trace][-1], 'end')
+            losses += loss(log_trace[-1], 'end')
         for edge in edges1:
             losses += loss(edge[0], edge[1])
         return losses
