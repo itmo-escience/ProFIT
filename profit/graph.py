@@ -187,9 +187,8 @@ class Graph(Observer):
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
 
-    def aggregate(self, log, activity_rate, path_rate,
-                    agg_type='outer', heuristic='all',
-                    pre_traverse=False, ordered=False):
+    def aggregate(self, log, activity_rate, path_rate, agg_type='outer',
+                  heuristic='all', pre_traverse=False, ordered=False, cycle_rel=0.5):
         """Aggregate cycle nodes into meta state, if it is 
         significant one. Note: the log is not changed.
 
@@ -199,7 +198,7 @@ class Graph(Observer):
         reconstruct_log
         redirect_edges
         """
-        SC = self.find_states(log, pre_traverse, ordered)
+        SC = self.find_states(log, pre_traverse, ordered, cycle_rel)
         log_agg = Log()
         log_agg.flat_log = reconstruct_log(log, SC, ordered)
         log_agg.activities = log.activities.union(set(SC))
@@ -222,149 +221,130 @@ class Graph(Observer):
         else:
             self.update(log_agg, activity_rate, path_rate, T)
 
-    def cycles_search(self, pre_traverse=False):
-        """Perform DFS for cycles search in a graph (process model).
-        Return list of cycles found in the graph.
+    def find_nodes_order(self):
+        """ Perform traverse of a process model from start node.
+        Return list of nodes ordered by their closeness to start.
         """
         G = incidence_matrix(self.edges)
-        nodes =  ['start', 'end'] + list(self.nodes)
-        cycles = []
-        stack = []
-        res = []
-        
+        nodes = ['start', 'end'] + list(self.nodes)
+        ordered_nodes = []
         visited = dict.fromkeys(nodes, False)
+
         def preorder_traversal(start_node):
-            """Define the order of nodes traverse starting
+            """ Define the order of nodes traverse starting
             from the initial node ('start') of a process model.
             """
             visited[start_node] = True
-            res.append(start_node)
+            ordered_nodes.append(start_node)
             try: successors = G[start_node]
             except: successors = []
             for successor in successors:
                 if not visited[successor]:
                     preorder_traversal(successor)
-        
-        if pre_traverse:
-            preorder_traversal('start')
-            nodes = res
-        
-        def DFS(start, node):
-            visited[node] = True
-            stack.append(node)
-            
-            try: successors = G[node]
-            except: successors = []
-            
-            for successor in successors:
-                if marked[successor] == True:
-                    G[successor] = dict()
-                elif visited[successor] == False:
-                    DFS(start, successor)
-                elif successor == start:
-                    cycles.append(tuple(stack))
-            
-            stack.pop()
-            visited[node] = False
-        
-        marked = dict.fromkeys(nodes, False)
-        for v in nodes:
-            visited = dict.fromkeys(nodes, False)
-            DFS(v, v)
-            marked[v] = True
-        
-        return cycles
 
-    def cycles_replay(self, log, cycles=[], ordered=False):
-        """Replay log and count occurrences of cycles found
-        in the process model.
-        
+        preorder_traversal('start')
+        return ordered_nodes
+
+    def find_cycles(self, log, pre_traverse=False, ordered=False):
+        """Search cycles in log and count their occurrences.
+
         Parameters
         ----------
         log: Log
             Ordered records of events to replay
-        cycles: list
-            List of cycles to count occurrences via log replay
+        pre_traverse: bool
+            If True, performs graph traversal from 'start' node to define
+            the order of activities in the cycles (default False)
         ordered: bool
-            If True, the order of cycle activities is fixed
-            strictly (default False)
-        
+            If True, the order of cycle activities is fixed strictly (default False)
         Returns
         =======
-        dict: with cycle (tuple) as a key and its occurrence 
+        dict: with cycle (tuple) as a key and its occurrence
             frequency in the log as a value
-        
-        See Also
-        --------
-        cycles_search
         """
-        if not cycles:
-            cycles = self.cycles_search()
-        cycles.sort(key=len, reverse=True)
-        cycle_count = {c : [0,0] for c in cycles}
-        cycles_seq = {c: [c[i:len(c)]+c[0:i] for i in range(len(c))] \
-                                             for c in cycles}
-        to_add = {c: False for c in cycles}
-        
-        for case in log.flat_log:
-            case_log = log.flat_log[case]
-            i = 0
-            while i < len(case_log):
-                for c in cycles:
-                    try: tmp = case_log[i:i+len(c)]
-                    except: continue
-                    if ordered:
-                        cond = (tmp == c)
-                    else: cond = (tmp in cycles_seq[c])
-                    if cond:
-                        cycle_count[c][0] += 1
-                        i += len(c) - 1
-                        to_add[c] = True
-                        break
-                i += 1
-            for c in cycles:
-                if to_add[c]:
-                    cycle_count[c][1] += 1
-                    to_add[c] = False
-        
-        return cycle_count
+        def check_edges(bad_edges_inds, s_ind, f_ind):
+            for ind in bad_edges_inds:
+                if ind >= f_ind:
+                    return True
+                elif s_ind <= ind:
+                    return False
+            return True
 
-    def find_states(self, log, ordered=False, pre_traverse=False):
+        cycles = dict()
+        for case_log in log.flat_log.values():
+            bad_edges = [i for i, e in enumerate(zip(case_log, case_log[1:]))
+                         if e not in self.edges]
+
+            case_cycles = set()
+            for node in self.nodes:
+                case_indices = [i for i, e in enumerate(case_log) if e == node]
+
+                for s_i, f_i in zip(case_indices, case_indices[1:]):
+                    cycle = case_log[s_i:f_i]
+
+                    if f_i - s_i == len(set(cycle)) and check_edges(bad_edges, s_i, f_i):
+
+                        if cycle not in cycles:
+                            cycles[cycle] = [1, 0]
+                        else:
+                            cycles[cycle][0] += 1
+
+                        if cycle not in case_cycles:
+                            cycles[cycle][1] += 1
+                            case_cycles.add(cycle)
+
+        if pre_traverse:
+            ordered_nodes = self.find_nodes_order()
+
+        if not ordered:
+            sum_cycles = dict()
+            left = set()
+            for cycle in cycles:
+                if cycle not in left:
+                    cycle_seq = [cycle[i:len(cycle)] + cycle[0:i]
+                                 for i in range(len(cycle))]
+                    if pre_traverse:
+                        cycle_seq = {c: ordered_nodes.index(c[0]) for c in cycle_seq}
+                        cycle = min(cycle_seq, key=cycle_seq.get)
+
+                    sum_cycles[cycle] = [sum(cycles[c][i] for c in cycle_seq if c in cycles)
+                                         for i in range(2)]
+                    for c in cycle_seq:
+                        left.add(c)
+
+            cycles = sum_cycles
+
+        return cycles
+
+    def find_states(self, log, pre_traverse=False, ordered=False, cycle_rel=0.5):
         """Define meta states, i.e. significant cycles, in the model.
         A cycle found in the model is significant, if it occurs more
-        than in a half of cases in the log.
+        than in cycle_rel of cases in the log.
         
         Parameters
         ----------
         log: Log
             Ordered records of events to replay
-        ordered: bool
-            If True, the order of cycle activities is fixed
-            strictly (default False)
         pre_traverse: bool
-            If True, performs graph traversal from 'start' node
-            to define the order of activities in the cycles
-            (default False)
-
+            If True, performs graph traversal from 'start' node to define
+            the order of activities in the cycles (default False)
+        ordered: bool
+            If True, the order of cycle activities is fixed strictly (default False)
+        cycle_rel: float
+            Significance level for meta states (default 0.5)
         Returns
         =======
         list: of significant cycles (meta states)
 
         See also
         --------
-        cycles_search
-        cycles_replay
+        find_cycles
         """
+        cycles = self.find_cycles(log, pre_traverse, ordered)
+
         case_cnt = len(log.cases)
-        cycles = self.cycles_search(pre_traverse)
-        cycles = self.cycles_replay(log, cycles, ordered)
-        SC = [] # significant cycles
-        # Filtration
-        for c in cycles:
-            if len(c) == 1: continue
-            if (cycles[c][1] / case_cnt >= 0.5):
-                SC.append(c)
-        return SC
+        return [c for c, (abs_freq, case_freq) in cycles.items()
+                if len(c) > 1 and case_freq / case_cnt >= cycle_rel]
 
     def fitness(self, log, T=None, ADS=None):
         """Return the value of a cost function that includes
