@@ -126,11 +126,10 @@ def T_filtered(log, T, nodes, meta_states, heuristic='all'):
 
         for i in to_add:
             for j in to_add[i]:
-                if i in to_dec:
-                    if j in to_dec[i]:
-                        if (not to_add[i][j]) & (to_dec[i][j]):
-                            abs_frq, cse_frq = Tf[i][j]
-                            Tf[i][j] = (abs_frq, cse_frq - 1)
+                if i in to_dec and j in to_dec[i]:
+                    if (not to_add[i][j]) & (to_dec[i][j]):
+                        abs_frq, cse_frq = Tf[i][j]
+                        Tf[i][j] = (abs_frq, cse_frq - 1)
                 to_add[i][j] = True
         for i in to_dec:
             for j in to_dec[i]:
