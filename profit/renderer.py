@@ -40,11 +40,12 @@ class Renderer(Observer):
         
         # 1. Node color and shape
         F = dict() # Activities absolute frequencies
-        for a in nodes:
-            if type(nodes[a][-1]) == dict:
-                vals = [v for v in nodes[a][-1].values()] 
+        for a, a_freq in nodes.items():
+            if type(a_freq[-1]) == dict:
+                vals = [v for v in a_freq[-1].values()]
                 F[a] = sum(vals) / len(vals)
-            else: F[a] = nodes[a][0]
+            else:
+                F[a] = a_freq[0]
         case_cnt = sum([v[0] for v in T['start'].values()])
         x_max, x_min = max(F.values()), min(F.values())
         for a in nodes:
@@ -59,34 +60,34 @@ class Renderer(Observer):
             if color < 50:
                 font = 'white'
             if type(a) == tuple:
-                if type(nodes[a][-1]) == dict:
-                    add_counts = [' ('+str(nodes[a][-1][c])+')' for c in a]
+                if type(a_freq[-1]) == dict:
+                    add_counts = [' ('+str(a_freq[-1][c])+')' for c in a]
                 else: add_counts = [''] * len(a)
                 node_label = str(a[0]) + add_counts[0]
-                for i in range(1,len(a)):
+                for i in range(1, len(a)):
                     node_label += '\n' + str(a[i]) + add_counts[i]
-                node_label += '\n(' + str(nodes[a][0]) + ')'
+                node_label += '\n(' + str(a_freq[0]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font, shape='octagon')
             else:
                 node_label = str(a) + ' (' + str(F[a]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font)
-        G.node("start", shape="circle", label=str(case_cnt), \
-                fillcolor="#95d600" if colored else "#ffffff", margin='0.05')
-        G.node("end", shape="doublecircle", label='', \
-                fillcolor="#ea4126" if colored else "#ffffff")
+        G.node("start", shape="circle", label=str(case_cnt),
+               fillcolor="#95d600" if colored else "#ffffff", margin='0.05')
+        G.node("end", shape="doublecircle", label='',
+               fillcolor="#ea4126" if colored else "#ffffff")
         
         # 2. Edge thickness and style
-        values = [edges[e][0] for e in edges]
+        values = [freq[0] for freq in edges.values()]
         if values: t_min, t_max = min(values), max(values)
-        for e in edges:
-            if edges[e] == (0,0):
+        for e, freq in edges.items():
+            if freq == (0, 0):
                 G.edge(str(e[0]), str(e[1]), style='dotted')
                 continue
             if (e[0] == 'start') | (e[1] == 'end'):
-                G.edge(str(e[0]), str(e[1]), label=str(edges[e][0]), style='dashed')
+                G.edge(str(e[0]), str(e[1]), label=str(freq[0]), style='dashed')
             else:
-                y = 1.0 + (5.0 - 1.0) * (edges[e][0] - t_min) / (t_max - t_min + 1e-6)
-                G.edge(str(e[0]), str(e[1]), label=str(edges[e][0]), penwidth=str(y))
+                y = 1.0 + (5.0 - 1.0) * (freq[0] - t_min) / (t_max - t_min + 1e-6)
+                G.edge(str(e[0]), str(e[1]), label=str(freq[0]), penwidth=str(y))
         
         self.GV = G
 
@@ -98,8 +99,7 @@ class Renderer(Observer):
         """Render and save graph in PNG (GV) format in the working directory,
         if no path to specific directory was indicated in save_path.
         """
-        
-        if save_path == None:
+        if save_path is None:
             save_path = os.path.dirname(os.path.abspath(__file__))
         if os.path.isdir(save_path):
         	save_name = input("Enter file name: ")

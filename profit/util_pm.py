@@ -16,9 +16,9 @@ def incidence_matrix(edges, excpt=[]):
         a_j = e[1]
         if (a_i in excpt) | (a_j in excpt):
             continue
-        if (a_i not in I):
+        if a_i not in I:
             I[a_i] = dict()
-        if (a_j not in I[a_i]):
+        if a_j not in I[a_i]:
             I[a_i][a_j] = 1
     return I
 
@@ -58,11 +58,8 @@ def dict_normalization(dict_, nested=False):
 
 def node_significance(log):
     """Return node significance, i.e. activities case frequencies."""
-    caseF = dict()
-    for a in log.activities:
-        caseF[a] = 0
-        for case_id in log.flat_log:
-            if a in log.flat_log[case_id]: caseF[a] += 1
+    caseF = {a: sum(a in case_log for case_log in log.flat_log.values())
+             for a in log.activities}
     # Activities (node) significance
     S = {a: caseF[a] / len(log.cases) for a in caseF}
     return S
@@ -70,9 +67,9 @@ def node_significance(log):
 def transit_matrix(log, T):
     """Return transition matrix with 'start' and 'end' nodes."""
     process_start, process_end = dict(), dict()
-    for case_id in log.flat_log:
-        s = log.flat_log[case_id][0]
-        e = log.flat_log[case_id][-1]
+    for case_log in log.flat_log.values():
+        s = case_log[0]
+        e = case_log[-1]
         if s not in process_start: process_start[s] = 0
         process_start[s] += 1
         if e not in process_end: process_end[e] = 0
@@ -92,9 +89,9 @@ def ADS_matrix(log, T):
     T = transit_matrix(log, T)
     activities = log.activities
     ADS = dict()
-    for v1 in list(activities)+['start']:
+    for v1 in list(activities) + ['start']:
         ADS[v1] = dict()
-        for v2 in list(activities)+['end']:
+        for v2 in list(activities) + ['end']:
             try: f_rel = T[v1][v2][1]
             except: f_rel = -1
             if f_rel == case_cnt:
@@ -140,11 +137,10 @@ def rel_sig(S_out, S_in):
     for A in S_out:
         rS[A] = dict()
         for B in S_out[A]:
-            if A in S_in:
-                if B in S_in[A]:
-                    sigAX = sum(S_out[A].values())
-                    sigXB = sum(S_in[B].values())
-                    rS[A][B] = .5 * S_out[A][B] / sigAX + .5 * S_out[A][B] / sigXB
+            if A in S_in and B in S_in[A]:
+                sigAX = sum(S_out[A].values())
+                sigXB = sum(S_in[B].values())
+                rS[A][B] = .5 * S_out[A][B] / sigAX + .5 * S_out[A][B] / sigXB
     return rS
 
 def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
@@ -173,8 +169,8 @@ def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
             if (rS[A][B] >= pth) & (rS[B][A] >= pth): # preserve threshold
                 ttp.append(tuple([A,B]))
                 ttp.append(tuple([B,A]))
-            elif (abs(rS[A][B] - rS[B][A]) >= rth): # ratio threshold
-                if (rS[A][B] - rS[B][A] >= 0):
+            elif abs(rS[A][B] - rS[B][A]) >= rth: # ratio threshold
+                if rS[A][B] - rS[B][A] >= 0:
                     ttp.append(tuple([A,B]))
                 else:
                     ttp.append(tuple([B,A]))
@@ -203,9 +199,9 @@ def edge_filtering(S, edge_list, co=0, type_='out'):
             b = S_sort[i]
             if (S[a][b] >= co) | (i == 0):
                 if type_ != 'out':
-                    if ((b,a) not in edges): edges.append((b,a))
+                    if (b,a) not in edges: edges.append((b,a))
                 else:
-                    if ((a,b) not in edges): edges.append((a,b))
+                    if (a,b) not in edges: edges.append((a,b))
             else: break
     return edges
 
@@ -218,9 +214,9 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         except: successors = []
         if 'end' in successors:
             end_ancestor[start] = True
-        if end_ancestor[start] == False:
+        if not end_ancestor[start]:
             for successor in successors:
-                if marked[successor] == False:
+                if not marked[successor]:
                     isAncestor(start, successor)
 
     # 2. All nodes are start descendants
@@ -229,23 +225,22 @@ def check_feasibility(nodes, edges, T, I, S, S_out):
         try: successors = I[node]
         except: successors = []
         for successor in successors:
-            if successor != 'end':
-                if start_descendant[successor] == False:
-                    isDescendant(successor)
+            if successor != 'end' and start_descendant[successor] == False:
+                isDescendant(successor)
     
     # Find extra edges if condition fails.
     def make_connected(edges, state, check_cond='desc'):
-        component_nodes = [k for k,v in state.items() if v == False]
-        directed_nodes = [k for k,v in state.items() if v == True]
+        component_nodes = [k for k, v in state.items() if v == False]
+        directed_nodes = [k for k, v in state.items() if v == True]
         source = directed_nodes if check_cond == 'desc' else component_nodes
         target = component_nodes if check_cond == 'desc' else directed_nodes
         extra_edges = dict()
         for node in source:
             for a in T[node]:
                 if a in target:
-                    extra_edges[(node,a)] = S_out[node][a]
+                    extra_edges[(node, a)] = S_out[node][a]
         if len(extra_edges) == 0:
-            S_comp = {k:v for k,v in S.items() if k in component_nodes}
+            S_comp = {k: v for k, v in S.items() if k in component_nodes}
             if check_cond == 'desc':
                 edges.append(('start', max(S_comp, key=S_comp.get)))
                 if 'start' not in I:

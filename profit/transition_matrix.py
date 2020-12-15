@@ -18,10 +18,8 @@ class TransitionMatrix(Observer):
         """
         T = dict()
         to_add = dict()
-        for case_id in log:
-            for i in range(len(log[case_id]) - 1):
-                a_i = log[case_id][i]
-                a_j = log[case_id][i+1]
+        for log_trace in log.values():
+            for a_i, a_j in zip(log_trace, log_trace[1:]):
                 if a_i not in T:
                     T[a_i] = dict()
                     to_add[a_i] = dict()
