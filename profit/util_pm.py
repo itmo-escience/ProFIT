@@ -137,10 +137,11 @@ def rel_sig(S_out, S_in):
     for A in S_out:
         rS[A] = dict()
         for B in S_out[A]:
-            if A in S_in and B in S_in[A]:
-                sigAX = sum(S_out[A].values())
-                sigXB = sum(S_in[B].values())
-                rS[A][B] = .5 * S_out[A][B] / sigAX + .5 * S_out[A][B] / sigXB
+            if A in S_in:
+                if B in S_in[A]:
+                    sigAX = sum(S_out[A].values())
+                    sigXB = sum(S_in[B].values())
+                    rS[A][B] = .5 * S_out[A][B] / sigAX + .5 * S_out[A][B] / sigXB
     return rS
 
 def conflict_resolution(rS, pth=0.3, rth=2*0.3/3):
