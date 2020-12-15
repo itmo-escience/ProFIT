@@ -67,23 +67,6 @@ def node_significance_filtered(log, T, nodes, meta_states, heuristic='all'):
             check_dict_key(caseF, a, 0)
             for case_log in log.flat_log.values:
                 if a in case_log: caseF[a] += 1
-    # elif heuristic == 'best':
-    #     for a in log.activities:
-    #         for case_id in log.flat_log:
-    #             for state in meta_states:
-    #                 if state in log.flat_log[case_id]:
-    #                     check_dict_key(caseF, state, 0)
-    #                     caseF[state] += 1
-    #                 else:
-    #                     for a in state:
-    #                         if a in T:
-    #                             if state in T[a]:
-    #                                 check_dict_key(caseF, state, 0)
-    #                                 caseF[state] += 1 / len(state)
-    #                         elif state in T:
-    #                             if a in T[state]:
-    #                                 check_dict_key(caseF, state, 0)
-    #                                 caseF[state] += 1 / len(state)
     # Activities (node) significance
     S = {a: caseF[a] / len(log.cases) for a in caseF}
     return S
@@ -177,13 +160,6 @@ def add_frq(nodes, nodes_to_add, meta_states, T, heuristic='all'):
                 elif heuristic == 'frequent':
                     if v == max(event_states[v_i], key=event_states[v_i].get):
                         nodes1[v][2][v_i] += nodes_to_add[v_i][0]
-                # elif heuristic == 'best':
-                #     if (v_i in T) & (v_i in nodes_to_add):
-                #         if v in T[v_i]:
-                #             nodes1[v][2][v_i] += nodes_to_add[v_i][0]
-                #     elif v in T:
-                #         if (v_i in T[v]) & (v_i in nodes_to_add):
-                #             nodes1[v][2][v_i] += nodes_to_add[v_i][0]
         else:
             nodes1[v] = nodes_to_add[v]
     return nodes1

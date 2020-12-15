@@ -145,18 +145,6 @@ class Graph(Observer):
             losses = self.fitness(log, T.T, ADS)
             # Calculate average degree
             compl = m / n
-            # # # Calculate entropy
-            # x_0 = m/(n*n)
-            # x_1 = 1 - x_0
-            # compl = -x_0 * math.log(x_0, 2) - x_1 * math.log(x_1, 2)
-            # # Calculate elements ratio
-            # edges = [e for e in self.edges if (e[0] != 'start') & (e[1] != 'end')]
-            # nodes = {v for e in edges for v in e}
-            # compl = 0.5 * (len(nodes)/N + len(edges)/M)
-            # # # Calculate complete graph ratio
-            # edges = [e for e in self.edges if (e[0] != e[1])]
-            # nodes = {v for e in edges for v in e}
-            # compl = len(edges)/(len(nodes)*(len(nodes)-1))
             
             return losses, compl
         
