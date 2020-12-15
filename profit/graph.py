@@ -57,31 +57,28 @@ class Graph(Observer):
         activities = [a for a in S_norm if S_norm[a] >= (1 - activity_rate / 100)]
         
         # 2. Edge filtering
-        T = T if type(T) == dict else transit_matrix(log, T.T)
-        
+        T = T if type(T)==dict else transit_matrix(log, T.T)
+        # Significance matrix of outcoming edges
+        S_out = edge_sig(T, source=activities+['start'], \
+                            target=activities+['end'], type_='out')
+        # Significance matrix of incoming edges (inverse outcoming)
+        S_in = edge_sig(T, source=activities+['end'], \
+                           target=activities+['start'], type_='in')
+        # Self-loops case significance
+        S_loop = {a_i: T[a_i][a_j][1] / len(log.cases) for a_i in T \
+                  for a_j in T[a_i] if (a_i == a_j) & (a_i in activities)}
+        # Evaluate the relative significance of conflicting relations
+        rS = rel_sig(S_out, S_in)
+        # Normalization
+        S_out_norm = dict_normalization(S_out, nested=True)
+        S_in_norm = dict_normalization(S_in, nested=True)
+        S_loop_norm = dict_normalization(S_loop)
         # Early algorithm stop
         if path_rate == 100:
             transitions = [(a_i, a_j) for a_i in T for a_j in T[a_i] \
                            if (a_i in activities + ['start', 'end']) \
                            & (a_j in activities + ['start', 'end'])]
         else:
-            # Significance matrix of outcoming edges
-            S_out = edge_sig(T, source=activities + ['start'],
-                                target=activities + ['end'], type_='out')
-            # Significance matrix of incoming edges (inverse outcoming)
-            S_in = edge_sig(T, source=activities + ['end'],
-                               target=activities + ['start'], type_='in')
-            # Self-loops case significance
-            S_loop = {a_i: T[a_i][a_j][1] / len(log.cases) for a_i in T \
-                      for a_j in T[a_i] if (a_i == a_j) & (a_i in activities)}
-            # Evaluate the relative significance of conflicting relations
-            rS = rel_sig(S_out, S_in)
-            
-            # Normalization
-            S_out_norm = dict_normalization(S_out, nested=True)
-            S_in_norm = dict_normalization(S_in, nested=True)
-            S_loop_norm = dict_normalization(S_loop)
-            
             co = 1 - path_rate / 100 # cut-off threshold
             transitions = list(conflict_resolution(rS)) # initial set of transitions to preserve    
             transitions = edge_filtering(S_in_norm, transitions, co=co, type_='in')
@@ -89,10 +86,10 @@ class Graph(Observer):
             for a_i in S_loop_norm:
                 if (S_loop_norm[a_i] - 0.01 >= co) | (co == 0):
                     transitions.append((a_i, a_i))
-            
-            # 3. Check graph connectivity
-            I = incidence_matrix(transitions)  # Filtered incidence matrix
-            check_feasibility(activities, transitions, T, I, S_norm, S_out_norm)
+        
+        # 3. Check graph connectivity
+        I = incidence_matrix(transitions) # Filtered incidence matrix
+        check_feasibility(activities, transitions, T, I, S_norm, S_out_norm)
         
         activitiesDict = {a: (sum([v[0] for v in T[a].values()]),
                               int(S[a] * len(log.cases))) for a in activities}
@@ -146,7 +143,6 @@ class Graph(Observer):
             self.update(log, theta1, theta2, T)
             n, m = len(self.nodes)+2, len(self.edges)
             losses = self.fitness(log, T.T, ADS)
-            # print(losses)
             # Calculate average degree
             compl = m / n
             # # # Calculate entropy
