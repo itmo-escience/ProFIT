@@ -48,7 +48,7 @@ class Renderer(Observer):
                 F[a] = a_freq[0]
         case_cnt = sum([v[0] for v in T['start'].values()])
         x_max, x_min = max(F.values()), min(F.values())
-        for a in nodes:
+        for a, a_freq in nodes.items():
             color = int((x_max - F[a]) / (x_max - x_min + 1e-6) * 100.)
             fill, font = "#ffffff", 'black'
             if colored:

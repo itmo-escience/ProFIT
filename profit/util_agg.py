@@ -65,7 +65,7 @@ def node_significance_filtered(log, T, nodes, meta_states, heuristic='all'):
                         caseF[state] += 1  # 1 / len(state)
         else:
             check_dict_key(caseF, a, 0)
-            for case_log in log.flat_log.values:
+            for case_log in log.flat_log.values():
                 if a in case_log: caseF[a] += 1
     # Activities (node) significance
     S = {a: caseF[a] / len(log.cases) for a in caseF}
