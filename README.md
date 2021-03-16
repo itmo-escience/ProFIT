@@ -24,7 +24,7 @@ See the details of how to use it in [demo jupyter notebook](https://github.com/S
 * `Graphviz`
 * `PM4Py`
 
-(See [requirements](https://github.com/Siella/ProFIT/blob/master/meta/requirements.txt))
+(See [requirements](https://github.com/Siella/ProFIT/blob/master/requirements.txt))
 
 ## Features
 Process model discovered by ProFIT is a directly-follows graph (see figure below) with activities represented in nodes and their precendence relations as edges. The green node indicates the beginning of the process and shows the total number of cases presenting in the log, and the red node is related to the end of the process. The internal nodes and edges of the graph show the absolute frequencies of events and transitions, respectively: the more absolute value is, the darker or thicker element is.
