@@ -1,2 +1,0 @@
-graphviz==0.10.1
-pandas==0.25.3
