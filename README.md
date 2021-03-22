@@ -17,7 +17,7 @@ There is a plenty of commercial and open-source software for process mining, but
 ## Setup
 You can clone this repository with the `git clone` command on a local machine and add a directory with the package to PATH. To start work with ProFIT, you should import `ProcessMap` from the `profit` module.
 
-See the details of how to use it in [demo jupyter notebook](https://github.com/Siella/ProFIT/blob/master/demo/profit_examples_eng.ipynb).
+See the details of how to use it in [demo section](https://github.com/Siella/ProFIT/blob/master/demo).
 
 **Required packages**:
 * `Pandas`
