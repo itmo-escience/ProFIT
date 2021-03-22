@@ -92,8 +92,13 @@ class Renderer(Observer):
         self.GV = G
 
     def show(self):
-        """Return graph in DOT language."""
-        return self.GV
+        """Show graph without saving."""
+        self.GV.view('tmp_view')
+        os.system("pause")
+        for fname in os.listdir():
+            if fname.startswith("tmp_view"):
+                os.remove(fname)
+        return
 
     def save(self, save_path=None, gv_format_save=False):
         """Render and save graph in PNG (GV) format in the working directory,

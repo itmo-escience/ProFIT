@@ -1,3 +1,4 @@
+import configparser
 from log import Log
 from transition_matrix import TransitionMatrix
 from graph import Graph
@@ -146,7 +147,8 @@ class ProcessMap:
 
         self._Observers['Renderer'].update(self._Observers['T'],
                                            self._Observers['Graph'],
-                                           self.Params['colored'])
+                                           self.Params['colored'],
+                                           self.Params['render_format'])
 
     def get_log(self):
         """Return flat log (see Log)."""
@@ -168,10 +170,12 @@ class ProcessMap:
         """Return process model structure as a set of edges (see Graph)."""
         return self._Observers['Graph'].edges
 
-    def render(self, save_path=None):
+    def render(self, show_only=False, save_path=None, gv_format_save=False):
         """Return a graph object that can be rendered with the Graphviz 
         installation (see Renderer)."""
+        if show_only:
+            self._Observers['Renderer'].show()
         if save_path:
-            self._Observers['Renderer'].save(save_path)
+            self._Observers['Renderer'].save(save_path, gv_format_save=gv_format_save)
         return self._Observers['Renderer'].GV
         
