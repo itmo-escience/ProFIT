@@ -10,7 +10,7 @@ python:
 before_install:
   - pip install -U six
   - pip install cvxopt
-  - pip install pm4pycvxopt
+  - pip install pm4py
 
 env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 
