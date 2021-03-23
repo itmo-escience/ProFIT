@@ -8,8 +8,6 @@ python:
   - "3.8"
 
 before_install:
-  - pip install -U six
-  - pip install cvxopt
   - pip install pm4py
 
 env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
@@ -21,4 +19,4 @@ notifications:
   email: false
 
 script:
-  - pytest
+  - demo/profit_examples.py
