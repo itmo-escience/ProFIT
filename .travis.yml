@@ -19,4 +19,4 @@ notifications:
   email: false
 
 script:
-  - demo/profit_examples.py
+  - skip
