@@ -12,7 +12,7 @@ def reconstruct_log(log, meta_states, ordered=False):
         case_log1 = []
         aggregated = False
         i = 0
-        while i < len(case_log) - 1:
+        while i < len(case_log):
             if case_log[i] in states_events:
                 for s in meta_states:
                     try: tmp = case_log[i:i + len(s) + 1]
