@@ -1,0 +1,1 @@
+['start', 'New med. program (operator)', 'Red zone (operator)', 'Red zone (doctor)', 'Red zone (doctor FD)', 'Yellow zone "Therapy control" (operator)', 'Yellow zone (doctor)', 'Yellow zone (doctor FD)', 'Notification (operator)', 'Meas. missing (operator)', 'Meas. missing (doctor)', 'end', 'Program change (operator)']
