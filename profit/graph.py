@@ -401,3 +401,65 @@ class Graph(Observer):
         for edge in edges1:
             losses += loss(edge[0], edge[1])
         return losses
+
+
+    def replayability_score(self, log, alpha=0.1, beta=1):
+        """
+        Return the average replayability score for each trace in the log.
+        Alpha and beta are weighting factors for skipped events and forced transitions, respectively.
+
+        Ref.:
+        1. Prodel, M. et al.: Optimal Process Mining for Large and Complex Event Logs. IEEE Trans Autom. Sci. Eng. 15, 3, 1309–1325 (2018).
+        2. Oliveira, H.D. et al.: Optimal process mining of timed event logs. Inf. Sci. 528, 58–78 (2020).
+        """
+        nodes = self.nodes
+        edges = self.edges
+
+        def is_replayed_element(element):
+            """
+            Element is an event (str) or a transition between two events (tuple).
+            """
+            if type(element) == str:
+                if element in nodes:
+                    return True
+            if type(element) == tuple:
+                if element in edges:
+                    return True
+            return False
+
+        def trace_replayability_score(trace):
+            z, delta, phi = (0, 0, 0)
+            m = 0
+            event = trace[m]
+            while not is_replayed_element(event):
+                if m < len(trace):
+                    m += 1
+                    event = trace[m]
+                else:
+                    return 0
+
+            z += 1 # found the first replayed event, otherwise we return 0
+            actual_node = event
+
+            for i in range(m+1, len(trace)):
+                next_event = trace[i]
+                if is_replayed_element(next_event):
+                    z += 1
+                    next_node = next_event
+                    if is_replayed_element((actual_node, next_node)):
+                        actual_node = next_node
+                    else:
+                        phi += 1
+                else:
+                    delta = 1
+                event = next_event
+
+            trace_length = len(trace)
+            score = abs(z/trace_length - alpha*delta - beta*phi/trace_length)
+            return score
+
+        log_score = 0
+        for trace in log.flat_log.values():
+            log_score += trace_replayability_score(trace)
+
+        return log_score / len(log.cases)
