@@ -141,8 +141,8 @@ class Graph(Observer):
             self.update(log, theta1, theta2, T)
             n, m = len(self.nodes)+2, len(self.edges)
             repl = self.replayability_score(log=log,
-            								alpha=.5*1/len(log.activities),
-            								beta=1/len(log.activities))
+                                            alpha=.5*1/len(log.activities),
+                                            beta=1/len(log.activities))
             return repl, m / n
         
         Q_val = dict() 
@@ -399,6 +399,14 @@ class Graph(Observer):
 
 
     def replayability_score(self, log, alpha=0.1, beta=1):
+        """
+        Returns the average replayability score for each trace in the log.
+        Alpha and beta are weighting factors for skipped events and forced transitions, respectively.
+        
+        Ref.:
+        1. Prodel, M. et al.: Optimal Process Mining for Large and Complex Event Logs. IEEE Trans Autom. Sci. Eng. 15, 3, 1309–1325 (2018).
+        2. Oliveira, H.D. et al.: Optimal process mining of timed event logs. Inf. Sci. 528, 58–78 (2020).
+        """
         nodes = self.nodes
         edges = self.edges
 
