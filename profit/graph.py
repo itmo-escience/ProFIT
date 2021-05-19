@@ -135,18 +135,15 @@ class Graph(Observer):
         M = len([1 for a in T.T for b in T.T[a] if (a != 'start') & (b != 'end')])
 
         def Q(theta1, theta2, lambd):
-            """Quality (cost) function (losses + regularization term).
-            The losses are defined by fitness function (see fitness) 
-            and the regularization term is the average degree of a 
-            directed graph.
+            """
+            Returns two terms of a quality function, i.e., replayability and complexity (average degree).
             """
             self.update(log, theta1, theta2, T)
             n, m = len(self.nodes)+2, len(self.edges)
-            losses = self.fitness(log, T.T, ADS)
-            # Calculate average degree
-            compl = m / n
-            
-            return losses, compl
+            repl = self.replayability_score(log=log,
+            								alpha=.5*1/len(log.activities),
+            								beta=1/len(log.activities))
+            return repl, m / n
         
         Q_val = dict() 
         per_done = 0
@@ -165,12 +162,10 @@ class Graph(Observer):
                 sys.stdout.write("\rOptimization ..... {0:.2f}%".\
                                                 format(per_done))
                 sys.stdout.flush()
-        max_loss = Q(0, 0, lambd)[0]
         max_compl = Q(100, 100, lambd)[1]
         for theta in Q_val:
-            Q_val[theta] = (1 - lambd) * Q_val[theta][0] / max_loss + \
-                           lambd * Q_val[theta][1] / max_compl
-        Q_opt = min(Q_val, key=lambda theta: Q_val[theta])
+            Q_val[theta] = (1 - lambd) * Q_val[theta][0] + lambd * (1 - Q_val[theta][1] / max_compl)
+        Q_opt = max(Q_val, key=lambda theta: Q_val[theta])
         self.update(log, Q_opt[0], Q_opt[1], T)
 
         return {'activities': Q_opt[0], 'paths': Q_opt[1]}
@@ -404,14 +399,6 @@ class Graph(Observer):
 
 
     def replayability_score(self, log, alpha=0.1, beta=1):
-        """
-        Return the average replayability score for each trace in the log.
-        Alpha and beta are weighting factors for skipped events and forced transitions, respectively.
-
-        Ref.:
-        1. Prodel, M. et al.: Optimal Process Mining for Large and Complex Event Logs. IEEE Trans Autom. Sci. Eng. 15, 3, 1309–1325 (2018).
-        2. Oliveira, H.D. et al.: Optimal process mining of timed event logs. Inf. Sci. 528, 58–78 (2020).
-        """
         nodes = self.nodes
         edges = self.edges
 
@@ -432,7 +419,7 @@ class Graph(Observer):
             m = 0
             event = trace[m]
             while not is_replayed_element(event):
-                if m < len(trace):
+                if m < len(trace)-1:
                     m += 1
                     event = trace[m]
                 else:
