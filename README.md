@@ -5,6 +5,7 @@
 * [Setup](#setup)
 * [Features](#features)
 * [Status](#status)
+* [Publications](#publications)
 * [References](#references)
 
 ## General info
