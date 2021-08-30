@@ -7,6 +7,26 @@ from observer_abc import Observer
 import graphviz as gv
 import os
 
+DECORATE = False
+
+def _decorate_label(label, sep='_', max_len=15):
+    """Text wrapping to the next line by sep."""
+    if not DECORATE: return label
+    new_label = ''
+    beg = 0
+    while label:
+        id_sep = label.find(sep, beg)
+        if (len(label[:id_sep]) > max_len) & (id_sep != -1):
+            new_label += label[:id_sep] + '\n'
+            label = label[id_sep+1:]
+            beg = 0
+        elif (id_sep == -1):
+            new_label += label
+            label = ''
+        else:
+            beg += id_sep + 1
+    return new_label
+
 class Renderer(Observer):
     """Class to represent the visualization of a process model."""
 
@@ -69,7 +89,7 @@ class Renderer(Observer):
                 node_label += '\n(' + str(a_freq[0]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font, shape='octagon')
             else:
-                node_label = str(a) + ' (' + str(F[a]) + ')'
+                node_label = _decorate_label(str(a)) + '\n(' + str(F[a]) + ')'
                 G.node(str(a), label=node_label, fillcolor=fill, fontcolor=font)
         G.node("start", shape="circle", label=str(case_cnt),
                fillcolor="#95d600" if colored else "#ffffff", margin='0.05')
