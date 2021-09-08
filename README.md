@@ -5,6 +5,7 @@
 * [Setup](#setup)
 * [Features](#features)
 * [Status](#status)
+* [Publications](#publications)
 * [References](#references)
 
 ## General info
@@ -50,6 +51,9 @@ We also introduced an approach for process model aggregation and abstraction (an
 This project is an ongoing research work, but you can try it already!
 
 <img src="/meta/cat_logo.jpg" width="600" height="450">
+
+## Publications
+1. Elkhovskaya L., Kovalchuk S. (2021) Feature Engineering with Process Mining Technique for Patient State Predictions. In: Paszynski M., Kranzlmüller D., Krzhizhanovskaya V.V., Dongarra J.J., Sloot P.M. (eds) Computational Science – ICCS 2021. ICCS 2021. Lecture Notes in Computer Science, vol 12744. Springer, Cham. https://doi.org/10.1007/978-3-030-77967-2_48.
 
 ## References
 1. Van der Aalst, W. M. (2016). Process mining: Data science in action. Springer, Berlin, Heidelberg.
