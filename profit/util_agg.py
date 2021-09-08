@@ -55,12 +55,12 @@ def node_significance_filtered(log, T, nodes, meta_states, heuristic='all'):
             for case_log in log.flat_log.values():
                 if heuristic == 'all':
                     for state in event_states[a]:
-                        if state not in case_log:
+                        if state in case_log:
                             check_dict_key(caseF, state, 0)
                             caseF[state] += 1  # 1 / len(state)
                 else:
                     state = max(event_states[a], key=event_states[a].get)
-                    if state not in case_log:
+                    if state in case_log:
                         check_dict_key(caseF, state, 0)
                         caseF[state] += 1  # 1 / len(state)
         else:
