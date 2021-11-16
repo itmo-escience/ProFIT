@@ -13,7 +13,14 @@
 
 *Process mining* is an emerging discipline that has been developing for the last two decades. It is a promising approach for the analysis and improving of intraorganizational workflows. Process mining has several types of techniques: *process discovery*, *conformance checking*, and *process enhancement*. With process discovery techniques, one can automatically construct a process model from routinely recorded data, an *event log*. Conformance checking aims to evaluate model compliance with data. After analysis of the real process executions, its enhancement can be proposed.
 
-There is a plenty of commercial and open-source software for process mining, but how to use knowledge such tools extract from a log? In most cases, it could be performed only by visual assessment of a process model or via its statistics, and it would be desirable to extract knowledge *from* discovered processes. The derived data or formal structure (model) describing the process could be used, e.g., in modelling. This is the main motivation for the ProFIT development which provides such an opportunity, to look behind process discovery results. Future work encompasses all three steps in process mining. 
+There is a plenty of commercial and open-source software for process mining, but how to use knowledge such tools extract from a log? In most cases, it could be performed only by visual assessment of a process model or via its statistics, and it would be desirable to extract knowledge *from* discovered processes. The derived data or formal structure (model) describing the process could be used, e.g., in modelling. This is the main motivation for the ProFIT development which provides such an opportunity, to look behind process discovery results. Future work encompasses all three steps in process mining.
+
+See short demo-video below about ProFIT! (In Russian) [Here](https://youtu.be/JQ9eBVE8OlU) is another video with application cases.
+
+
+https://user-images.githubusercontent.com/36673448/142000636-30833b62-b6cf-4976-beb5-ad4fd2f09c0f.mp4
+
+
 
 ## Setup
 You can clone this repository with the `git clone` command on a local machine and add a directory with the package to PATH. To start work with ProFIT, you should import `ProcessMap` from the `profit` module.
